@@ -1,0 +1,95 @@
+/* MITS Web Club theme - practical institutional design approved 2026-11-03.
+   Tokens from the approved Stitch screen: white/navy, Merriweather headings,
+   Inter body, calendar-style event rows. */
+:root {
+  --navy: #00163d;
+  --navy-soft: #0f2b5c;
+  --ink: #191c1e;
+  --muted: #44464f;
+  --line: #e0e3e5;
+  --line-soft: #eceef0;
+  --bg: #f7f9fb;
+  --surface: #ffffff;
+  --badge-bg: #f2f4f6;
+  --error: #ba1a1a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { font-family: 'Merriweather', Georgia, serif; color: var(--navy); line-height: 1.25; }
+a { color: var(--navy-soft); }
+
+.site-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Branding header: college crest left, MITS wordmark center, SAC crest right. */
+.brand-header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand-crest { height: 40px; width: auto; object-fit: contain; }
+.brand-wordmark { max-height: 34px; width: auto; display: block; }
+.main-nav { display: flex; gap: 24px; align-items: center; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.main-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 10px 0; border-bottom: 2px solid transparent; }
+.main-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+.main-nav .link-btn { font-weight: 600; font-size: 0.9rem; padding: 10px 0; color: var(--ink); text-decoration: none; }
+.nav-spacer { flex: 1; }
+.link-btn { background: none; border: none; padding: 0; color: var(--navy-soft); cursor: pointer; font: inherit; text-decoration: underline; }
+
+.page { flex: 1; max-width: 72rem; width: 100%; margin: 0 auto; padding: 40px 24px 64px; }
+.page h1 { font-size: 2.2rem; margin: 0 0 16px; }
+.page h2 { font-size: 1.35rem; }
+.lead { color: var(--muted); max-width: 42rem; margin: 0 0 24px; }
+
+.section-title { position: relative; padding-bottom: 10px; margin: 48px 0 8px; }
+.section-title::after { content: ''; position: absolute; left: 0; bottom: 0; width: 28px; border-bottom: 2px solid var(--navy); }
+
+.btn { display: inline-block; background: var(--navy); color: #fff; padding: 10px 18px; border-radius: 2px; text-decoration: none; border: none; cursor: pointer; font: inherit; font-weight: 600; }
+.btn:hover { background: var(--navy-soft); }
+.muted { color: var(--muted); }
+.error { color: var(--error); }
+.notice { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 12px 16px; }
+.demo-note { background: #fff7e0; border: 1px solid #e8d78a; padding: 8px 12px; border-radius: 2px; }
+
+/* Calendar-style event rows (approved design). */
+.event-list { list-style: none; padding: 0; margin: 16px 0 0; display: grid; }
+.event-row { display: flex; align-items: center; gap: 24px; padding: 22px 8px; border-bottom: 1px solid var(--line); }
+.date-badge { flex: 0 0 88px; background: var(--badge-bg); border-radius: 2px; text-align: center; padding: 12px 4px; }
+.date-badge .dow { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.date-badge .md { display: block; font-family: 'Merriweather', Georgia, serif; font-size: 1.25rem; color: var(--navy); margin-top: 2px; }
+.event-row .row-main { flex: 1; min-width: 0; }
+.tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.tag { background: var(--badge-bg); color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; }
+.event-row h2 { font-size: 1.15rem; margin: 0 0 4px; }
+.event-row h2 a { color: var(--navy); text-decoration: none; }
+.event-row h2 a:hover { text-decoration: underline; }
+.event-meta { color: var(--muted); font-size: 0.9rem; margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.event-meta svg { width: 15px; height: 15px; }
+.row-action { flex: 0 0 auto; font-weight: 600; font-size: 0.9rem; text-decoration: none; white-space: nowrap; }
+.row-action:hover { text-decoration: underline; }
+
+.auth-box { max-width: 360px; }
+.auth-box label { display: block; margin-bottom: 12px; }
+.auth-box input { display: block; width: 100%; padding: 8px; margin-top: 4px; border: 1px solid var(--line); border-radius: 2px; font: inherit; }
+
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.gallery-grid img { width: 100%; border-radius: 2px; }
+.site-footer { text-align: center; padding: 20px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; background: var(--surface); }
+
+.admin-form { display: grid; gap: 0.5rem; max-width: 40rem; margin: 1rem 0; }
+.admin-form label { display: grid; gap: 0.15rem; font-size: 0.9rem; }
+.admin-form input[type="checkbox"] { width: auto; }
+.admin-list { list-style: none; padding: 0; display: grid; gap: 0.4rem; margin: 1rem 0; }
+.linklike { background: none; border: none; padding: 0; color: var(--navy-soft); text-decoration: underline; cursor: pointer; font: inherit; }
+.admin-thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 2px; vertical-align: middle; margin-right: 0.5rem; }
+.admin-assets, .admin-docs { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+.event-poster { width: 100%; max-height: 220px; object-fit: cover; border-radius: 2px; margin-bottom: 0.5rem; }
+.lifecycle-badge { background: var(--badge-bg); color: var(--navy-soft); border-radius: 2px; padding: 0 0.5em; font-size: 0.8em; }
+.prewrap { white-space: pre-wrap; }
+
+@media (max-width: 640px) {
+  .page { padding: 28px 16px 48px; }
+  .page h1 { font-size: 1.7rem; }
+  .event-row { flex-direction: column; align-items: stretch; gap: 12px; padding: 18px 4px; }
+  .date-badge { flex: none; display: flex; justify-content: center; gap: 8px; align-items: baseline; padding: 10px 4px; }
+  .row-action { align-self: flex-end; }
+  .main-nav { gap: 16px; padding: 0 16px; overflow-x: auto; }
+  .brand-header { padding: 8px 12px; }
+  .brand-crest { height: 34px; }
+  .brand-wordmark { max-height: 28px; }
+}
