@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth'
 // Self-signup creates a viewer account only; admin rights are seeded separately.
 // Sign-in stays hidden until numeric-code email delivery is verified end to end
 // (custom SMTP + template). Flip to true once that is confirmed live.
-const SIGNIN_READY = false
+const SIGNIN_READY = true
 
 export default function Login() {
   const { requestOtp, verifyOtp, isDemoMode, isMisconfigured } = useAuth()
