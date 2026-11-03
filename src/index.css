@@ -28,7 +28,7 @@ svg { flex: none; }
 
 /* Branding header: college crest left, club name center, SAC crest right. */
 .brand-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 20px; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-sm); }
-.brand-crest { height: 52px; width: auto; object-fit: contain; }
+.brand-crest { height: 38px; width: auto; object-fit: contain; }
 
 .main-nav { display: flex; gap: 6px; align-items: center; padding: 0 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .main-nav a, .main-nav .link-btn { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 12px 12px; border-bottom: 2px solid transparent; }
@@ -285,9 +285,9 @@ section.card { margin-top: 20px; }
 .admin-table .icon-btn.danger:hover { border-color: #c62828; background: #fdecec; color: #c62828; }
 
 /* Center header wordmark (user-supplied official MITS lettering, text-only). */
-.brand-wordmark { flex: 1; height: 50px; width: auto; max-width: 62%; object-fit: contain; }
+.brand-wordmark { flex: 1; height: 42px; width: auto; max-width: 62%; object-fit: contain; }
 @media (max-width: 640px) {
-  .brand-wordmark { height: 40px; max-width: 55%; }
+  .brand-wordmark { height: 32px; max-width: 55%; }
 }
 
 /* Admin dashboard stat cards */
