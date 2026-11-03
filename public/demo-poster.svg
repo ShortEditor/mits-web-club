@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="640" viewBox="0 0 480 640">
+  <rect width="480" height="640" fill="#00163d"/>
+  <rect x="24" y="24" width="432" height="592" fill="none" stroke="#f2f4f6" stroke-width="4"/>
+  <text x="240" y="300" text-anchor="middle" font-family="Roboto, Arial, sans-serif" font-size="40" font-weight="700" fill="#ffffff">DEMO EVENT</text>
+  <text x="240" y="352" text-anchor="middle" font-family="Roboto, Arial, sans-serif" font-size="40" font-weight="700" fill="#ffffff">POSTER</text>
+  <text x="240" y="420" text-anchor="middle" font-family="Roboto, Arial, sans-serif" font-size="20" fill="#c6d2e8">sample artwork - replaced by real</text>
+  <text x="240" y="448" text-anchor="middle" font-family="Roboto, Arial, sans-serif" font-size="20" fill="#c6d2e8">posters from the admin panel</text>
+</svg>

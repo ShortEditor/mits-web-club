@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getEventBySlug, listGallery, mediaUrl } from '../lib/api'
 import Icon from '../components/Icon'
+import PosterImage from '../components/PosterImage'
 
 // Event page: details + gallery for completed events. Media comes from private
 // Storage via short-lived signed URLs, so sign-in is enforced server-side too.
@@ -22,6 +23,7 @@ export default function EventDetail() {
   if (!event) return <p className="muted">Event not found or not published yet.</p>
   return (
     <article>
+      <PosterImage path={event.poster_path} alt={`${event.title} poster`} className="detail-poster" />
       <h1>{event.title}</h1>
       <p className="muted">
         {event.event_date && <><Icon name="calendar" /> {event.event_date} </>}

@@ -7,7 +7,7 @@ export const demoEvents = [
     title: 'Introduction to Web Development (Demo)',
     short_description: 'Sample event: hands-on HTML, CSS and JavaScript basics for beginners.',
     description: 'This is demo content shown before real events are published from the admin panel.',
-    poster_path: null,
+    poster_path: '/demo-poster.svg',
     event_date: '2026-11-20',
     start_time: '10:00',
     end_time: '13:00',

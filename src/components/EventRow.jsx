@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Icon from './Icon'
+import PosterImage from './PosterImage'
 
 // One calendar-style event row: date badge, category tag, title, time + venue.
 function badgeParts(iso) {
@@ -25,6 +26,7 @@ export default function EventRow({ event: e }) {
   const time = timeLine(e)
   return (
     <li className="event-row">
+      <PosterImage path={e.poster_path} alt={`${e.title} poster`} className="row-poster" />
       {badge && (
         <div className="date-badge">
           <span className="dow">{badge.dow}</span>

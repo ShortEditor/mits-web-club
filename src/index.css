@@ -20,10 +20,10 @@ a { color: var(--navy-soft); }
 
 .site-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* Branding header: college crest left, MITS wordmark center, SAC crest right. */
-.brand-header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
-.brand-crest { height: 40px; width: auto; object-fit: contain; }
-.brand-wordmark { max-height: 34px; width: auto; display: block; }
+/* Branding header: college crest left, club name center, SAC crest right. */
+.brand-header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand-crest { height: 36px; width: auto; object-fit: contain; }
+.brand-title { flex: 1; text-align: center; font-weight: 700; font-size: 1.1rem; color: var(--navy); letter-spacing: 0.01em; }
 .main-nav { display: flex; gap: 24px; align-items: center; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .main-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 10px 0; border-bottom: 2px solid transparent; }
 .main-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
@@ -48,7 +48,16 @@ a { color: var(--navy-soft); }
 
 /* Calendar-style event rows (approved design). */
 .event-list { list-style: none; padding: 0; margin: 16px 0 0; display: grid; }
-.event-row { display: flex; align-items: center; gap: 24px; padding: 22px 8px; border-bottom: 1px solid var(--line); }
+.event-row { display: flex; align-items: center; gap: 20px; padding: 18px 8px; border-bottom: 1px solid var(--line); }
+
+/* Event posters: shown before the title; click opens the enlarged view. */
+.poster-thumb { flex: 0 0 auto; width: 84px; aspect-ratio: 3 / 4; padding: 0; border: 1px solid var(--line); border-radius: 2px; background: var(--badge-bg); cursor: zoom-in; overflow: hidden; }
+.poster-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poster-placeholder { display: grid; place-items: center; cursor: default; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; border-style: dashed; }
+.detail-poster { width: min(300px, 100%); margin-bottom: 16px; }
+.lightbox { position: fixed; inset: 0; z-index: 60; background: rgba(0, 10, 30, 0.82); display: grid; place-items: center; padding: 24px; }
+.lightbox img { max-width: min(92vw, 640px); max-height: 86vh; object-fit: contain; background: var(--surface); }
+.lightbox-close { position: absolute; top: 14px; right: 18px; background: none; border: none; color: #fff; font-size: 2rem; line-height: 1; cursor: pointer; }
 .date-badge { flex: 0 0 88px; background: var(--badge-bg); border-radius: 2px; text-align: center; padding: 12px 4px; }
 .date-badge .dow { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .date-badge .md { display: block; font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1.25rem; color: var(--navy); margin-top: 2px; }
@@ -89,7 +98,9 @@ a { color: var(--navy-soft); }
   .date-badge { flex: none; display: flex; justify-content: center; gap: 8px; align-items: baseline; padding: 10px 4px; }
   .row-action { align-self: flex-end; }
   .main-nav { gap: 16px; padding: 0 16px; overflow-x: auto; }
-  .brand-header { padding: 8px 12px; }
-  .brand-crest { height: 34px; }
-  .brand-wordmark { max-height: 28px; }
+  .brand-header { padding: 6px 12px; }
+  .brand-crest { height: 32px; }
+  .brand-title { font-size: 1rem; }
+  .row-poster { width: 100%; aspect-ratio: auto; max-height: 200px; }
+  .row-poster img { object-fit: cover; }
 }
