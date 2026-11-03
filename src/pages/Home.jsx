@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { isMisconfigured } from '../lib/supabase'
-import { listPublishedEvents } from '../lib/api'
+import { listPublishedEvents, listRecentPhotos, mediaUrl } from '../lib/api'
 import Icon from '../components/Icon'
 import PosterImage from '../components/PosterImage'
 
@@ -36,15 +36,35 @@ function EventCard({ event: e }) {
   )
 }
 
+
+// One homepage photo: signed URL from the private media bucket.
+function PhotoCard({ photo }) {
+  const [url, setUrl] = useState(null)
+  useEffect(() => { mediaUrl(photo.image_path).then(setUrl) }, [photo.image_path])
+  if (!url) return null
+  return (
+    <li>
+      <img src={url} alt={photo.alt_text || photo.caption || 'Event photo'} loading="lazy" />
+      {photo.caption && <p className="muted">{photo.caption}</p>}
+    </li>
+  )
+}
+
 export default function Home() {
   const { session, isDemoMode } = useAuth()
   const canSeeEvents = !!session || isDemoMode
   const [events, setEvents] = useState(null)
+  const [past, setPast] = useState(null)
+  const [photos, setPhotos] = useState([])
   useEffect(() => {
     if (!canSeeEvents) return
     listPublishedEvents()
-      .then((rows) => setEvents(rows.filter((e) => e.lifecycle === 'ongoing').slice(0, 3)))
-      .catch(() => setEvents([]))
+      .then((rows) => {
+        setEvents(rows.filter((e) => e.lifecycle === 'ongoing').slice(0, 3))
+        setPast(rows.filter((e) => e.lifecycle === 'completed').slice(0, 3))
+      })
+      .catch(() => { setEvents([]); setPast([]) })
+    listRecentPhotos(6).then(setPhotos)
   }, [canSeeEvents])
   return (
     <>
@@ -53,6 +73,7 @@ export default function Home() {
         <p>The student web development club at Madanapalle Institute of Technology and Science.</p>
         <div className="hero-actions">
           <Link className="btn btn-white" to="/events">See events</Link>
+          <Link className="btn btn-outline" to="/past-events">View past events</Link>
           {!canSeeEvents && <Link className="btn btn-outline" to="/login">Sign in</Link>}
         </div>
       </section>
@@ -72,7 +93,23 @@ export default function Home() {
           </ul>
         )}
       </section>
-      <section className="about-panel">
+            {canSeeEvents && past && past.length > 0 && (
+        <section>
+          <h2 className="section-title">Recently Completed</h2>
+          <ul className="card-grid">
+            {past.map((e) => <EventCard key={e.id} event={e} />)}
+          </ul>
+        </section>
+      )}
+      {photos.length > 0 && (
+        <section>
+          <h2 className="section-title">Event Photos</h2>
+          <ul className="photo-strip">
+            {photos.map((p) => <PhotoCard key={p.id} photo={p} />)}
+          </ul>
+        </section>
+      )}
+<section className="about-panel">
         <h2 className="section-title">About</h2>
         <p>
           We run workshops, hackathons and hands-on sessions, and build websites

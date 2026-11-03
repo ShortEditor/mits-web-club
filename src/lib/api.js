@@ -84,6 +84,75 @@ export async function updateEvent(id, fields) {
   return data
 }
 
+
+// Delete an event (RLS: admins only). Order matters: collect the event's exact
+// storage paths BEFORE deleting rows, delete the DB row (children cascade),
+// then remove those files. Any file that could not be removed is returned as
+// orphanedFiles so the caller can report it - nothing is silently orphaned.
+// Demo mode refuses loudly instead of crashing on the null client.
+export async function deleteEvent(id) {
+  if (isDemoMode) throw new Error('Local preview only: deleting needs the live backend.')
+  const paths = []
+  const { data: ev, error: evErr } = await supabase.from('events').select('poster_path').eq('id', id).single()
+  if (evErr) throw evErr
+  if (ev?.poster_path) paths.push(ev.poster_path)
+  const { data: gal, error: galErr } = await supabase.from('event_gallery_images').select('image_path').eq('event_id', id)
+  if (galErr) throw galErr
+  for (const g of gal || []) if (g.image_path) paths.push(g.image_path)
+  const { data: doc, error: docErr } = await supabase.from('event_documents').select('pdf_path').eq('event_id', id).maybeSingle()
+  if (docErr) throw docErr
+  if (doc?.pdf_path) paths.push(doc.pdf_path)
+
+  const { error } = await supabase.from('events').delete().eq('id', id)
+  if (error) throw error
+
+  const orphanedFiles = []
+  if (paths.length) {
+    const { data: removed, error: rmErr } = await supabase.storage.from('media').remove(paths)
+    const removedNames = new Set((removed || []).map((f) => f.name))
+    for (const p of paths) if (rmErr || !removedNames.has(p)) orphanedFiles.push(p)
+  }
+  return { orphanedFiles }
+}
+
+
+// Duplicate an event as an unpublished draft (RLS: admins only). Slug is made
+// unique-ish with a suffix; the admin can edit it before publishing.
+export async function duplicateEvent(id) {
+  if (isDemoMode) throw new Error('Local preview only: duplicating needs the live backend.')
+  const { data, error } = await supabase.from('events').select('*').eq('id', id).single()
+  if (error) throw error
+  const copy = { ...data }
+  delete copy.id; delete copy.created_at; delete copy.updated_at
+  copy.title = `${data.title} (copy)`
+  copy.slug = `${data.slug}-copy-${Date.now().toString(36)}`
+  copy.published = false
+  const { data: row, error: e2 } = await supabase.from('events').insert(copy).select().single()
+  if (e2) throw e2
+  return row
+}
+
+// Update a gallery image's caption / alt text / display order (RLS: admins only).
+export async function updateGalleryImage(id, fields) {
+  if (isDemoMode) throw new Error('Local preview only: editing needs the live backend.')
+  const { error } = await supabase.from('event_gallery_images').update(fields).eq('id', id)
+  if (error) throw error
+}
+
+// Latest gallery photos from published events, for the homepage strip. Returns
+// [] when the current reader has no gallery access (RLS decides).
+export async function listRecentPhotos(limit = 6) {
+  if (isDemoMode) return []
+  const { data, error } = await supabase
+    .from('event_gallery_images')
+    .select('id, image_path, caption, alt_text, events!inner(published)')
+    .eq('events.published', true)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return data
+}
+
 // Upload a file into the private "media" bucket. prefix is 'events' (posters,
 // gallery) or 'docs' (report PDFs - storage policy keeps docs/ admin-only).
 export async function uploadMedia(prefix, eventId, file) {

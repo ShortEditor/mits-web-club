@@ -1,0 +1,34 @@
+-- DRAFT - DO NOT APPLY. Viewer-eligibility decision is still pending with the club
+-- (asked 2026-11-03, unanswered). Current live policy keeps events/gallery reads
+-- admin-only. When the club picks a model, apply EXACTLY ONE variant below as a
+-- properly numbered migration, then delete the others. No variant grants write
+-- access to non-admins, and none makes faculty anything other than viewers.
+
+-- =====================================================================
+-- VARIANT A: ROSTER. Only pre-registered members (admin-managed roster) read.
+-- Requires the members<->auth activation link to exist first (match key
+-- undecided: email vs roll number). Members row id must equal auth.users id.
+-- =====================================================================
+-- drop policy events_admin_read on public.events;
+-- create policy events_member_read on public.events for select to authenticated
+--   using (public.is_admin() or exists (select 1 from public.members m where m.id = auth.uid() and m.activated));
+-- drop policy gallery_admin_read on public.event_gallery_images;
+-- create policy gallery_member_read on public.event_gallery_images for select to authenticated
+--   using (public.is_admin() or exists (select 1 from public.members m where m.id = auth.uid() and m.activated));
+
+-- =====================================================================
+-- VARIANT B: COLLEGE DOMAIN. Any signed-in user whose email ends with the
+-- college domain reads. (Confirm the exact student/faculty email domain first.)
+-- =====================================================================
+-- drop policy events_admin_read on public.events;
+-- create policy events_domain_read on public.events for select to authenticated
+--   using (public.is_admin() or (select email from auth.users where id = auth.uid()) ilike '%@COLLEGE-DOMAIN-HERE');
+-- (same pattern for event_gallery_images)
+
+-- =====================================================================
+-- VARIANT C: OPEN SIGNUP. Any signed-in user reads published events.
+-- Requires a published flag on events (schema addition) or all rows are public.
+-- =====================================================================
+-- drop policy events_admin_read on public.events;
+-- create policy events_open_read on public.events for select to authenticated using (true);
+-- (same pattern for event_gallery_images)

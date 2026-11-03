@@ -35,8 +35,12 @@ export function AuthProvider({ children }) {
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.verifyOtp({ email, token, type: 'email' })
   const signInWithPassword = (email, password) =>
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.signInWithPassword({ email, password })
-  const setPassword = (password, fullName) =>
-    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password, data: { full_name: fullName } })
+  const setPassword = (password, fullName, role) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password, data: { full_name: fullName, role: role === 'faculty' ? 'faculty' : 'student' } })
+  // Post-login profile completion (any provider, incl. Google): self-declared
+  // name/role only - grants no access, never marks anyone verified.
+  const saveProfile = (fullName, role) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ data: { full_name: fullName, role: role === 'faculty' ? 'faculty' : 'student' } })
   const signInWithGoogle = () =>
     !supabase
       ? Promise.resolve({ error: { message: 'Backend not connected' } })
@@ -44,7 +48,7 @@ export function AuthProvider({ children }) {
   const signOut = () => (!supabase ? Promise.resolve() : supabase.auth.signOut())
 
   return (
-    <AuthCtx.Provider value={{ session, isAdmin, loading, isDemoMode, isMisconfigured, requestOtp, verifyOtp, signInWithPassword, setPassword, signInWithGoogle, signOut }}>
+    <AuthCtx.Provider value={{ session, isAdmin, loading, isDemoMode, isMisconfigured, requestOtp, verifyOtp, signInWithPassword, setPassword, saveProfile, signInWithGoogle, signOut }}>
       {children}
     </AuthCtx.Provider>
   )

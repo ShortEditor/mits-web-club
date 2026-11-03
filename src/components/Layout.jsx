@@ -1,16 +1,21 @@
 import { NavLink } from 'react-router-dom'
 import Icon from './Icon'
 import { useAuth } from '../lib/auth'
+import ProfileComplete from './ProfileComplete'
 
-// Sticky branding header: college crest LEFT, club name CENTER (the official
-// wordmark image embeds the same crest - showing both read as a duplicate logo),
-// SAC crest RIGHT; simple nav row below.
+// Sticky branding header: college crest LEFT, official MITS text wordmark
+// CENTER (user-supplied, text-only portion - no crest inside it), SAC crest
+// RIGHT; simple nav row below.
 // Name shown after login: prefer the real profile name (Google identity or the
 // name collected at first-time setup). If none exists, show a neutral welcome -
 // never invent a name from the email address.
 function displayName(user) {
   const m = user?.user_metadata || {}
   return (m.full_name || m.name || '').trim()
+}
+function roleLabel(user) {
+  const r = user?.user_metadata?.role
+  return r === 'faculty' ? 'faculty' : r === 'student' ? 'student' : ''
 }
 
 export default function Layout({ children }) {
@@ -19,7 +24,7 @@ export default function Layout({ children }) {
     <div className="site-shell">
       <header className="brand-header">
         <img src="/brand/mits-crest.jpg" alt="MITS college crest" className="brand-crest" />
-        <div className="brand-title">MITS Web Club</div>
+        <img src="/brand/mits-wordmark-text.png" alt="MITS - Madanapalle Institute of Technology & Science (Deemed to be University)" className="brand-wordmark" />
         <img src="/brand/sac-crest.jpg" alt="Student Activity Center crest" className="brand-crest" />
       </header>
       <nav className="main-nav">
@@ -40,11 +45,16 @@ export default function Layout({ children }) {
       </nav>
       {session && (
         <div className="welcome-strip"><Icon name="users" size={15} />
-          Welcome{displayName(session.user) ? `, ${displayName(session.user)}` : ''}! You are signed in{isAdmin ? ' as an admin' : ''} as {session.user.email}
+          Welcome{displayName(session.user) ? `, ${displayName(session.user)}` : ''}! Signed in as {session.user.email}{isAdmin ? ' · admin' : roleLabel(session.user) ? ` · ${roleLabel(session.user)}` : ''}
         </div>
       )}
-      <main className="page">{children}</main>
-      <footer className="footer">Built by Web Club &middot; Madanapalle Institute of Technology and Science</footer>
+      <main className="page">
+        {session && (!displayName(session.user) || (!isAdmin && !roleLabel(session.user))) ? <ProfileComplete /> : children}
+      </main>
+      <footer className="footer">
+        <div>&copy; Built by Web Club &middot; Madanapalle Institute of Technology and Science</div>
+        <div>If you have any issues: <a href="mailto:sudarshanpeddakotla@gmail.com">sudarshanpeddakotla@gmail.com</a></div>
+      </footer>
     </div>
   )
 }

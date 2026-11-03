@@ -4,8 +4,7 @@ import {
   uploadMedia, addGalleryImage, removeGalleryImage,
   getEventDocument, upsertEventDocument, listGallery, mediaUrl,
   listMembers, addMember, listParticipants, addParticipant, removeParticipant,
-  listAdminDirectory, addAdminByEmail,
-} from '../lib/api'
+  listAdminDirectory, addAdminByEmail, deleteEvent, duplicateEvent, updateGalleryImage } from '../lib/api'
 import Icon from '../components/Icon'
 
 // Admin panel: manage events, posters, gallery images and admin-only
@@ -39,6 +38,39 @@ export default function Admin() {
 
   const [tab, setTab] = useState('events')
 
+  async function copyEvent(e) {
+    setBusy(true)
+    setError('')
+    try {
+      await duplicateEvent(e.id)
+      await refresh()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+
+  async function removeEvent(e) {
+    if (!window.confirm(`Delete "${e.title}"? This permanently removes the event, its photos and documents. This cannot be undone.`)) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await deleteEvent(e.id)
+      if (selected && selected !== 'new' && selected.id === e.id) setSelected(null)
+      await refresh()
+      if (res?.orphanedFiles?.length) {
+        setError(`Event deleted, but ${res.orphanedFiles.length} stored file(s) could not be removed: ${res.orphanedFiles.join(', ')}`)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+
   return (
     <>
       <div className="admin-hero">
@@ -63,8 +95,9 @@ export default function Admin() {
         <>
           <section>
             <div className="card-head"><Icon name="calendar" size={20} /><h2>Events Management</h2></div>
+            <AdminStats events={events} />
             <p className="muted">All published, draft and completed events.</p>
-            <AdminEventsTable events={events} onNew={() => setSelected('new')} onEdit={setSelected} busy={busy} />
+            <AdminEventsTable events={events} onNew={() => setSelected('new')} onEdit={setSelected} onDelete={removeEvent} onDuplicate={copyEvent} busy={busy} />
           </section>
           <MembersSection />
         </>
@@ -144,13 +177,16 @@ function EventEditor({ event, onDone, onCancel }) {
         </label>
         <label>
           <input type="checkbox" checked={!!form.published} onChange={set('published')} />
-          {' '}Published (visible to signed-in users)
+          {' '}Published (unpublished events stay in the admin panel)
         </label>
         <div>
           <button type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save event'}</button>
           <button type="button" onClick={onCancel}>Back</button>
         </div>
       </form>
+      {persisted && (
+        <p><a href={`/events/${persisted.slug}`} target="_blank" rel="noreferrer">Preview event page (opens the public view)</a></p>
+      )}
       {persisted && <EventAssets event={persisted} onChanged={onDone} />}
       {persisted && <ParticipantsEditor event={persisted} />}
       {persisted && <DocEditor event={persisted} />}
@@ -196,6 +232,18 @@ function EventAssets({ event, onChanged }) {
     finally { setBusy(false) }
   }
 
+
+  async function move(a, b) {
+    if (!b) return
+    setBusy(true); setError('')
+    try {
+      await updateGalleryImage(a.id, { display_order: b.display_order })
+      await updateGalleryImage(b.id, { display_order: a.display_order })
+      await refresh()
+    } catch (e) { setError(e.message) }
+    finally { setBusy(false) }
+  }
+
   return (
     <section className="card admin-assets">
       <div className="card-head"><Icon name="image" size={18} /><h3>Poster and gallery</h3></div>
@@ -204,14 +252,20 @@ function EventAssets({ event, onChanged }) {
       <label>Upload poster <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'poster')} /></label>
       <label>Add gallery image <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'gallery')} /></label>
       <ul className="admin-list">
-        {gallery.map((g) => (
-          <li key={g.id}>
+        {gallery.map((g, i) => (
+          <li key={g.id} className="gallery-item">
             <GalleryThumb image={g} />
+            <GalleryMeta image={g} onSaved={refresh} disabled={busy} />
+            <span className="gallery-order">
+              <button type="button" className="icon-btn" title="Move up" disabled={busy || i === 0}
+                onClick={() => move(g, gallery[i - 1])}>&uarr;</button>
+              <button type="button" className="icon-btn" title="Move down" disabled={busy || i === gallery.length - 1}
+                onClick={() => move(g, gallery[i + 1])}>&darr;</button>
+            </span>
             <button type="button" disabled={busy} onClick={() => remove(g)}>Remove</button>
           </li>
         ))}
-      </ul>
-    </section>
+      </ul>    </section>
   )
 }
 
@@ -221,6 +275,34 @@ function GalleryThumb({ image }) {
   return url
     ? <img src={url} alt={image.alt_text || 'Gallery image'} className="admin-thumb" />
     : <span className="muted">loading...</span>
+}
+
+
+// Caption + alt text editor for one gallery image (saved on demand).
+function GalleryMeta({ image, onSaved, disabled }) {
+  const [caption, setCaption] = useState(image.caption || '')
+  const [alt, setAlt] = useState(image.alt_text || '')
+  const [state, setState] = useState('')
+  async function save() {
+    setState('saving')
+    try {
+      await updateGalleryImage(image.id, { caption, alt_text: alt })
+      setState('saved')
+      onSaved()
+    } catch { setState('error') }
+  }
+  return (
+    <span className="gallery-meta">
+      <input type="text" placeholder="Caption" value={caption} disabled={disabled}
+        onChange={(e) => setCaption(e.target.value)} aria-label="Image caption" />
+      <input type="text" placeholder="Alt text" value={alt} disabled={disabled}
+        onChange={(e) => setAlt(e.target.value)} aria-label="Image alt text" />
+      <button type="button" disabled={disabled || state === 'saving'} onClick={save}>
+        {state === 'saving' ? 'Saving...' : 'Save'}
+      </button>
+      {state === 'error' && <span className="error">Could not save.</span>}
+    </span>
+  )
 }
 
 function DocEditor({ event }) {
@@ -267,7 +349,7 @@ function DocEditor({ event }) {
 
   return (
     <section className="card admin-docs">
-      <div className="card-head"><Icon name="doc" size={18} /><h3>Documentation (visible only to admins)</h3></div>
+      <div className="card-head"><Icon name="doc" size={18} /><h3>Documentation (admin-only until viewer access is opened)</h3></div>
       {error && <p className="notice">{error}</p>}
       <form onSubmit={saveDoc} className="admin-form">
         <label>Objectives <textarea rows={2} value={d.objectives || ''} onChange={setD('objectives')} /></label>
@@ -278,6 +360,11 @@ function DocEditor({ event }) {
         <label>Participation summary <textarea rows={2} value={d.participation_summary || ''} onChange={setD('participation_summary')} /></label>
         <label>Acknowledgements <textarea rows={2} value={d.acknowledgements || ''} onChange={setD('acknowledgements')} /></label>
         <label>Report write-up <textarea rows={6} value={d.report_content || ''} onChange={setD('report_content')} /></label>
+        <label>
+          <input type="checkbox" checked={!!d.published}
+            onChange={(ev) => setDoc((cur) => ({ ...(cur || {}), published: ev.target.checked }))} />
+          {' '}Documentation published (ready to share once viewer access is opened)
+        </label>
         <button type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save documentation'}</button>
       </form>
       <p>Report PDF: {pdfUrl ? <a href={pdfUrl} target="_blank" rel="noreferrer">view current PDF</a> : 'none'}</p>
@@ -316,6 +403,18 @@ function MembersSection() {
   }
 
   const set = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }))
+
+
+  async function move(a, b) {
+    if (!b) return
+    setBusy(true); setError('')
+    try {
+      await updateGalleryImage(a.id, { display_order: b.display_order })
+      await updateGalleryImage(b.id, { display_order: a.display_order })
+      await refresh()
+    } catch (e) { setError(e.message) }
+    finally { setBusy(false) }
+  }
 
   return (
     <section className="card admin-assets">
@@ -393,6 +492,18 @@ function ParticipantsEditor({ event }) {
   }
 
   const set = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }))
+
+
+  async function move(a, b) {
+    if (!b) return
+    setBusy(true); setError('')
+    try {
+      await updateGalleryImage(a.id, { display_order: b.display_order })
+      await updateGalleryImage(b.id, { display_order: a.display_order })
+      await refresh()
+    } catch (e) { setError(e.message) }
+    finally { setBusy(false) }
+  }
 
   return (
     <section className="card admin-assets">
@@ -496,7 +607,30 @@ function formatAdminDate(e) {
 // Events table (approved admin design): full-width search, category filter,
 // plain EVENT / CATEGORY / DATE AND TIME / VENUE LOCATION / ACTIONS columns.
 // Row descriptions come from the event's real short_description.
-export function AdminEventsTable({ events, onNew, onEdit, busy }) {
+
+// PRD dashboard: total, upcoming, published past, recent updates (30 days).
+function AdminStats({ events }) {
+  const now = Date.now()
+  const month = 30 * 24 * 60 * 60 * 1000
+  const upcoming = events.filter((e) => e.lifecycle === 'ongoing').length
+  const pastPublished = events.filter((e) => e.lifecycle !== 'ongoing' && e.published).length
+  const recent = events.filter((e) => e.updated_at && now - new Date(e.updated_at).getTime() < month).length
+  const cards = [
+    ['Total events', events.length],
+    ['Upcoming', upcoming],
+    ['Published past', pastPublished],
+    ['Updated in 30 days', recent],
+  ]
+  return (
+    <div className="stat-grid">
+      {cards.map(([label, n]) => (
+        <div className="stat-card" key={label}><strong>{n}</strong><span>{label}</span></div>
+      ))}
+    </div>
+  )
+}
+
+export function AdminEventsTable({ events, onNew, onEdit, onDelete, onDuplicate, busy }) {
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState('')
   const categories = [...new Set(events.map((e) => e.category).filter(Boolean))].sort()
@@ -542,8 +676,14 @@ export function AdminEventsTable({ events, onNew, onEdit, busy }) {
               <td className="cell-muted">{e.venue || '-'}</td>
               <td>
                 <div className="row-actions">
-                  <button type="button" className="icon-btn" title="Edit event" onClick={() => onEdit(e)}>
+                  <button type="button" className="icon-btn" title="Edit event" onClick={() => onEdit(e)} disabled={busy}>
                     <Icon name="edit" size={16} />
+                  </button>
+                  <button type="button" className="icon-btn" title="Duplicate as draft" onClick={() => onDuplicate(e)} disabled={busy}>
+                    <Icon name="copy" size={16} />
+                  </button>
+                  <button type="button" className="icon-btn danger" title="Delete event" onClick={() => onDelete(e)} disabled={busy}>
+                    <Icon name="trash" size={16} />
                   </button>
                 </div>
               </td>
