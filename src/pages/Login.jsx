@@ -4,6 +4,10 @@ import { useAuth } from '../lib/auth'
 
 // Email OTP sign-in: enter college email, receive a 6-digit code, enter code.
 // Self-signup creates a viewer account only; admin rights are seeded separately.
+// Sign-in stays hidden until numeric-code email delivery is verified end to end
+// (custom SMTP + template). Flip to true once that is confirmed live.
+const SIGNIN_READY = false
+
 export default function Login() {
   const { requestOtp, verifyOtp, isDemoMode, isMisconfigured } = useAuth()
   const [email, setEmail] = useState('')
@@ -15,6 +19,7 @@ export default function Login() {
 
   if (isDemoMode) return <p className="demo-note">Sign-in is disabled in this local preview because the backend is not connected yet.</p>
   if (isMisconfigured) return <p className="notice">Sign-in is not available yet - the site's backend has not been connected.</p>
+  if (!SIGNIN_READY) return <p className="notice">Sign-in is being set up and is not available yet. Please check back soon.</p>
 
   const send = async (ev) => {
     ev.preventDefault()
