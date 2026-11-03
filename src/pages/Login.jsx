@@ -14,6 +14,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
+  const [name, setName] = useState('')
   const [msg, setMsg] = useState(null)
   const nav = useNavigate()
   const loc = useLocation()
@@ -44,7 +45,7 @@ export default function Login() {
   const savePassword = async (ev) => {
     ev.preventDefault()
     if (password.length < 8) { setMsg('Password must be at least 8 characters.'); return }
-    const { error } = await saveAccountPassword(password)
+    const { error } = await saveAccountPassword(password, name.trim())
     if (error) setMsg(error.message)
     else done()
   }
@@ -98,6 +99,7 @@ export default function Login() {
         <>
           <p className="muted">Email verified. Set a password for future sign-ins.</p>
           <form onSubmit={savePassword}>
+            <label>Your name <input type="text" required value={name} onChange={(e) => setName(e.target.value)} /></label>
             <label>New password (min 8 characters) <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
             <button className="btn" type="submit">Save password and sign in</button>
           </form>

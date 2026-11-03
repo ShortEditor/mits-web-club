@@ -35,8 +35,8 @@ export function AuthProvider({ children }) {
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.verifyOtp({ email, token, type: 'email' })
   const signInWithPassword = (email, password) =>
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.signInWithPassword({ email, password })
-  const setPassword = (password) =>
-    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password })
+  const setPassword = (password, fullName) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password, data: { full_name: fullName } })
   const signInWithGoogle = () =>
     !supabase
       ? Promise.resolve({ error: { message: 'Backend not connected' } })

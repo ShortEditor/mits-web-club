@@ -4,6 +4,14 @@ import { useAuth } from '../lib/auth'
 // Sticky branding header: college crest LEFT, club name CENTER (the official
 // wordmark image embeds the same crest - showing both read as a duplicate logo),
 // SAC crest RIGHT; simple nav row below.
+// Name shown after login: prefer the real profile name (Google identity or the
+// name collected at first-time setup). If none exists, show a neutral welcome -
+// never invent a name from the email address.
+function displayName(user) {
+  const m = user?.user_metadata || {}
+  return (m.full_name || m.name || '').trim()
+}
+
 export default function Layout({ children }) {
   const { session, isAdmin, signOut, isDemoMode } = useAuth()
   return (
@@ -29,6 +37,11 @@ export default function Layout({ children }) {
           <NavLink to="/login">Sign in</NavLink>
         )}
       </nav>
+      {session && (
+        <div className="welcome-strip">
+          Welcome{displayName(session.user) ? `, ${displayName(session.user)}` : ''}! You are signed in{isAdmin ? ' as an admin' : ''} as {session.user.email}
+        </div>
+      )}
       <main className="page">{children}</main>
       <footer className="site-footer">Built by Web Club</footer>
     </div>
