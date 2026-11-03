@@ -153,11 +153,15 @@ export async function listRecentPhotos(limit = 6) {
   return data
 }
 
-// Upload a file into the private "media" bucket. prefix is 'events' (posters,
-// gallery) or 'docs' (report PDFs - storage policy keeps docs/ admin-only).
-export async function uploadMedia(prefix, eventId, file) {
+// Upload a file into the private "media" bucket. kind is 'poster', 'gallery'
+// or 'docs'. Paths are kind-namespaced so storage RLS can tell them apart:
+//   events/<eventId>/poster/...  - faculty may write only for events they own
+//   events/<eventId>/gallery/... - admin-only
+//   docs/<eventId>/...           - admin-only
+export async function uploadMedia(kind, eventId, file) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const path = `${prefix}/${eventId}/${Date.now()}-${safeName}`
+  const leaf = `${Date.now()}-${safeName}`
+  const path = kind === 'docs' ? `docs/${eventId}/${leaf}` : `events/${eventId}/${kind}/${leaf}`
   const { error } = await supabase.storage.from('media').upload(path, file)
   if (error) throw error
   return path

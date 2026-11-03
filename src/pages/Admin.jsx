@@ -206,6 +206,8 @@ function EventEditor({ event, onDone, onCancel }) {
 }
 
 function EventAssets({ event, onChanged }) {
+  const { isAdmin, session } = useAuth()
+  const canEdit = isAdmin || (session?.user?.id && event.created_by === session.user.id)
   const [gallery, setGallery] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -220,7 +222,7 @@ function EventAssets({ event, onChanged }) {
     if (!file) return
     setBusy(true); setError('')
     try {
-      const path = await uploadMedia('events', event.id, file)
+      const path = await uploadMedia(kind, event.id, file)
       if (kind === 'poster') {
         await updateEvent(event.id, { poster_path: path })
       } else {
@@ -260,20 +262,30 @@ function EventAssets({ event, onChanged }) {
       <div className="card-head"><Icon name="image" size={18} /><h3>Poster and gallery</h3></div>
       {error && <p className="notice">{error}</p>}
       <p>Current poster: {event.poster_path ? <code>{event.poster_path}</code> : 'none'}</p>
-      <label>Upload poster <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'poster')} /></label>
-      <label>Add gallery image <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'gallery')} /></label>
+      {canEdit && (
+        <label>Upload poster <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'poster')} /></label>
+      )}
+      {isAdmin && (
+        <label>Add gallery image <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'gallery')} /></label>
+      )}
       <ul className="admin-list">
         {gallery.map((g, i) => (
           <li key={g.id} className="gallery-item">
             <GalleryThumb image={g} />
-            <GalleryMeta image={g} onSaved={refresh} disabled={busy} />
-            <span className="gallery-order">
-              <button type="button" className="icon-btn" title="Move up" disabled={busy || i === 0}
-                onClick={() => move(g, gallery[i - 1])}>&uarr;</button>
-              <button type="button" className="icon-btn" title="Move down" disabled={busy || i === gallery.length - 1}
-                onClick={() => move(g, gallery[i + 1])}>&darr;</button>
-            </span>
-            <button type="button" disabled={busy} onClick={() => remove(g)}>Remove</button>
+            {isAdmin ? (
+              <>
+                <GalleryMeta image={g} onSaved={refresh} disabled={busy} />
+                <span className="gallery-order">
+                  <button type="button" className="icon-btn" title="Move up" disabled={busy || i === 0}
+                    onClick={() => move(g, gallery[i - 1])}>&uarr;</button>
+                  <button type="button" className="icon-btn" title="Move down" disabled={busy || i === gallery.length - 1}
+                    onClick={() => move(g, gallery[i + 1])}>&darr;</button>
+                </span>
+                <button type="button" disabled={busy} onClick={() => remove(g)}>Remove</button>
+              </>
+            ) : (
+              <span className="muted">{g.caption || g.alt_text || ''}</span>
+            )}
           </li>
         ))}
       </ul>    </section>
@@ -642,6 +654,9 @@ function AdminStats({ events }) {
 }
 
 export function AdminEventsTable({ events, onNew, onEdit, onDelete, onDuplicate, busy }) {
+  const { isAdmin, session } = useAuth()
+  const uid = session?.user?.id
+  const canModify = (e) => isAdmin || (uid && e.created_by === uid)
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState('')
   const categories = [...new Set(events.map((e) => e.category).filter(Boolean))].sort()
@@ -687,15 +702,20 @@ export function AdminEventsTable({ events, onNew, onEdit, onDelete, onDuplicate,
               <td className="cell-muted">{e.venue || '-'}</td>
               <td>
                 <div className="row-actions">
-                  <button type="button" className="icon-btn" title="Edit event" onClick={() => onEdit(e)} disabled={busy}>
-                    <Icon name="edit" size={16} />
-                  </button>
+                  {canModify(e) && (
+                    <button type="button" className="icon-btn" title="Edit event" onClick={() => onEdit(e)} disabled={busy}>
+                      <Icon name="edit" size={16} />
+                    </button>
+                  )}
                   <button type="button" className="icon-btn" title="Duplicate as draft" onClick={() => onDuplicate(e)} disabled={busy}>
                     <Icon name="copy" size={16} />
                   </button>
-                  <button type="button" className="icon-btn danger" title="Delete event" onClick={() => onDelete(e)} disabled={busy}>
-                    <Icon name="trash" size={16} />
-                  </button>
+                  {canModify(e) && (
+                    <button type="button" className="icon-btn danger" title="Delete event" onClick={() => onDelete(e)} disabled={busy}>
+                      <Icon name="trash" size={16} />
+                    </button>
+                  )}
+                  {!canModify(e) && <span className="cell-muted">managed by {e.created_by ? 'another editor' : 'admin'}</span>}
                 </div>
               </td>
             </tr>
