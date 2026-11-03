@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import Privacy from './pages/Privacy'
 import { AuthProvider } from './lib/auth'
 import Layout from './components/Layout'
 import { RequireAuth, RequireAdmin } from './components/Guards'
@@ -16,6 +17,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/events" element={<RequireAuth><Events mode="current" /></RequireAuth>} />
             <Route path="/past-events" element={<RequireAuth><Events mode="archive" /></RequireAuth>} />
             <Route path="/events/:slug" element={<RequireAuth><EventDetail /></RequireAuth>} />
