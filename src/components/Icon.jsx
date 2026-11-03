@@ -3,6 +3,38 @@
 // (calendar_today, location_on, etc.) with real rendered icons.
 
 const PATHS = {
+  shield: (
+    <>
+      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" />
+      <path d="M9.5 12l2 2 3.5-4" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.8" />
+      <path d="M4.5 18l5-5 3.5 3.5 3-3 3.5 4.5" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M4 20h4l11-11-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
+    </>
+  ),
+  doc: (
+    <>
+      <path d="M6 2h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+      <path d="M14 2v5h5M9 13h6M9 17h6" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="M4 11l8-7 8 7" />
+      <path d="M6 10v10h12V10" />
+    </>
+  ),
   calendar: (
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
