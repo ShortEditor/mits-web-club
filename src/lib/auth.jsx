@@ -3,9 +3,9 @@ import { supabase, isDemoMode, isMisconfigured } from './supabase'
 
 const AuthCtx = createContext(null)
 
-// Auth model (per confirmed brief):
-// - Users create their own account, then sign in with an OTP (email OTP planned;
-//   phone SMS OTP ruled out on cost - paid provider + India TRAI DLT).
+// Auth model (per confirmed brief, updated 2026-11-03 with user approval):
+// - First time: verify email with a 6-digit code, then set a password.
+// - Returning: sign in with email + password, or "Continue with Google".
 // - Events and gallery require sign-in. Documentation is admin-only.
 // - Self-signup NEVER grants admin: admins are seeded manually in the admins table.
 export function AuthProvider({ children }) {
@@ -29,15 +29,22 @@ export function AuthProvider({ children }) {
       .then(({ data }) => setIsAdmin((data || []).length > 0))
   }, [session])
 
-  // Email OTP: Supabase emails a 6-digit code (needs custom SMTP in production).
   const requestOtp = (email) =>
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
   const verifyOtp = (email, token) =>
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.verifyOtp({ email, token, type: 'email' })
+  const signInWithPassword = (email, password) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.signInWithPassword({ email, password })
+  const setPassword = (password) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password })
+  const signInWithGoogle = () =>
+    !supabase
+      ? Promise.resolve({ error: { message: 'Backend not connected' } })
+      : supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/events' } })
   const signOut = () => (!supabase ? Promise.resolve() : supabase.auth.signOut())
 
   return (
-    <AuthCtx.Provider value={{ session, isAdmin, loading, isDemoMode, isMisconfigured, requestOtp, verifyOtp, signOut }}>
+    <AuthCtx.Provider value={{ session, isAdmin, loading, isDemoMode, isMisconfigured, requestOtp, verifyOtp, signInWithPassword, setPassword, signInWithGoogle, signOut }}>
       {children}
     </AuthCtx.Provider>
   )
