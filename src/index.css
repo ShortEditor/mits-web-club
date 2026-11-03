@@ -32,7 +32,7 @@ svg { flex: none; }
 .brand-title { flex: 1; text-align: center; font-weight: 700; font-size: 1.15rem; color: var(--navy); letter-spacing: 0.01em; }
 
 .main-nav { display: flex; gap: 6px; align-items: center; padding: 0 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
-.main-nav a, .main-nav .link-btn { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 12px 12px; border-bottom: 2px solid transparent; }
+.main-nav a, .main-nav .link-btn { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 12px 12px; border-bottom: 2px solid transparent; }
 .main-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
 .main-nav a:hover, .main-nav .link-btn:hover { color: var(--navy); }
 .nav-spacer { flex: 1; }
@@ -166,3 +166,88 @@ button.linklike { background: none; border: none; padding: 0; color: var(--navy-
 .admin-form > div button[type="submit"]:hover:not(:disabled), .admin-form > button[type="submit"]:hover:not(:disabled) { background: var(--navy-soft); }
 .admin-thumb { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
 section.card { margin-top: 20px; }
+
+/* --- Approved Stitch direction (2026-11-03): subtle navy gradients, poster-first
+   cards, plain event-management copy. Implemented in code, not mockup. --- */
+
+/* Gradient hero panel (home) + admin portal header. White text on navy. */
+.hero-grad {
+  background: linear-gradient(135deg, #001233 0%, #001d4a 55%, #0f2b5c 100%);
+  color: #fff; border-radius: var(--radius-lg); padding: 48px 40px;
+  box-shadow: var(--shadow-md);
+}
+.hero-grad h1 { color: #fff; margin: 0 0 12px; font-size: 2.4rem; }
+.hero-grad p { color: rgba(255, 255, 255, 0.82); font-size: 1.05rem; margin: 0 0 26px; max-width: 40rem; }
+.hero-grad .btn-white { background: #fff; color: var(--navy); }
+.hero-grad .btn-white:hover:not(:disabled) { background: #eef2f9; box-shadow: var(--shadow-sm); }
+.hero-grad .btn-outline { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.45); }
+.hero-grad .btn-outline:hover:not(:disabled) { border-color: #fff; }
+@media (max-width: 640px) { .hero-grad { padding: 32px 22px; } .hero-grad h1 { font-size: 1.8rem; } }
+
+/* Poster-first event cards (home upcoming, 3-up grid). */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; list-style: none; margin: 18px 0 0; padding: 0; }
+.event-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; text-decoration: none; color: inherit; transition: box-shadow 0.15s, transform 0.15s; }
+.event-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.event-card .card-poster { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--navy-tint); display: block; }
+.event-card .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
+.event-card h3 { margin: 0; font-size: 1.05rem; color: var(--navy); }
+.event-card .card-meta { color: var(--muted); font-size: 0.86rem; display: flex; flex-direction: column; gap: 4px; }
+.event-card .card-meta span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* About section on home: quiet two-sentence panel. */
+.about-panel { margin-top: 56px; }
+.about-panel p { color: var(--muted); max-width: 46rem; font-size: 1.02rem; }
+
+/* Admin portal header (gradient, white text - contrast-safe). */
+.admin-hero {
+  background: linear-gradient(135deg, #001233 0%, #001d4a 55%, #0f2b5c 100%);
+  color: #fff; border-radius: var(--radius-lg); padding: 30px 32px;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  box-shadow: var(--shadow-md); margin-bottom: 24px; flex-wrap: wrap;
+}
+.admin-hero h1 { color: #fff; margin: 0 0 6px; font-size: 1.7rem; }
+.admin-hero p { color: rgba(255, 255, 255, 0.82); margin: 0; font-size: 0.95rem; }
+
+/* Admin events toolbar: full-width search + category filter. */
+.admin-toolbar { display: flex; gap: 12px; margin: 18px 0 6px; flex-wrap: wrap; }
+.admin-toolbar .search-wrap { position: relative; flex: 1; min-width: 220px; }
+.admin-toolbar .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.admin-toolbar .search-wrap input { width: 100%; padding-left: 38px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding-top: 10px; padding-bottom: 10px; padding-right: 12px; outline: none; }
+.admin-toolbar .search-wrap input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0, 22, 61, 0.12); }
+.admin-toolbar select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 170px; outline: none; }
+.admin-toolbar select:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0, 22, 61, 0.12); }
+
+/* Admin events table: EVENT / CATEGORY / DATE AND TIME / VENUE / ACTIONS. */
+.admin-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; margin-top: 14px; }
+.admin-table th { text-align: left; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); background: #fafbfd; }
+.admin-table td { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; font-size: 0.92rem; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table .cell-title { font-weight: 700; color: var(--navy); }
+.admin-table .cell-sub { color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
+.admin-table .cell-muted { color: var(--muted); }
+.admin-table .badge { text-transform: uppercase; letter-spacing: 0.05em; }
+.admin-table .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.admin-table .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
+.admin-table .icon-btn:hover { border-color: var(--line); background: var(--navy-tint); color: var(--navy); }
+@media (max-width: 720px) {
+  /* Stacked event cards: title full width, metadata and actions below. */
+  .admin-table { background: transparent; border: none; box-shadow: none; }
+  .admin-table thead { display: none; }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
+  .admin-table tr { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: 14px; padding: 10px 2px; }
+  .admin-table td { border-bottom: none; padding: 4px 16px; }
+  .admin-table .row-actions { justify-content: flex-start; }
+}
+
+/* PosterImage renders a button.poster-thumb (click-to-enlarge) or a
+   .poster-placeholder div; neutralize the global button look inside cards. */
+.event-card .card-poster { display: block; width: 100%; aspect-ratio: 4 / 5; padding: 0; border: none; border-radius: 0; background: var(--navy-tint); overflow: hidden; cursor: zoom-in; }
+.event-card .card-poster:hover:not(:disabled) { border: none; background: var(--navy-tint); }
+.event-card .card-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.event-card .poster-placeholder.card-poster { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; cursor: default; }
+
+@media (max-width: 640px) {
+  .main-nav { padding: 0 10px; gap: 2px; }
+  .main-nav a, .main-nav .link-btn { padding: 12px 8px; font-size: 0.84rem; gap: 5px; }
+  .brand-title { font-size: 1.02rem; }
+}

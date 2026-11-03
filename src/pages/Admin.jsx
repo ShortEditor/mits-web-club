@@ -41,46 +41,30 @@ export default function Admin() {
 
   return (
     <>
-      <h1>Admin panel</h1>
+      <div className="admin-hero">
+        <div>
+          <h1>Club Admin Dashboard</h1>
+          <p>Create, edit and manage club events.</p>
+        </div>
+      </div>
       {error && <p className="notice">{error}</p>}
       {!selected && (
         <div className="tabs" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'events'} className={tab === 'events' ? 'active' : ''} onClick={() => setTab('events')}>
-            <Icon name="calendar" /> Events
+            <Icon name="calendar" /> Events Directory
           </button>
           <button type="button" role="tab" aria-selected={tab === 'admins'} className={tab === 'admins' ? 'active' : ''} onClick={() => setTab('admins')}>
-            <Icon name="shield" /> Admins
+            <Icon name="shield" /> Access &amp; Privileges
           </button>
         </div>
       )}
       {!selected && tab === 'admins' && <AdminsSection />}
       {!selected && tab === 'events' && (
         <>
-          <section className="card">
-            <div className="card-head"><Icon name="calendar" size={20} /><h2>Events</h2></div>
-            <p className="muted">Create and edit club events, posters, galleries, participants and documentation.</p>
-            <button type="button" className="btn btn-primary" onClick={() => setSelected('new')} disabled={busy}>
-              <Icon name="plus" /> New event
-            </button>
-            <ul className="admin-list">
-              {events.map((e) => (
-                <li key={e.id}>
-                  <span>
-                    <span className="item-title">{e.title}</span>
-                    <span className="item-sub">
-                      {' '}&middot; {e.lifecycle} &middot; {e.published ? 'published' : 'draft'}
-                      {e.event_date ? ` &middot; ${e.event_date}` : ''}
-                    </span>
-                  </span>
-                  <span className="row-actions">
-                    <button type="button" onClick={() => setSelected(e)}>
-                      <Icon name="edit" /> Edit
-                    </button>
-                  </span>
-                </li>
-              ))}
-              {events.length === 0 && <li className="muted">No events yet. Create the first one.</li>}
-            </ul>
+          <section>
+            <div className="card-head"><Icon name="calendar" size={20} /><h2>Events Management</h2></div>
+            <p className="muted">All published, draft and completed events.</p>
+            <AdminEventsTable events={events} onNew={() => setSelected('new')} onEdit={setSelected} busy={busy} />
           </section>
           <MembersSection />
         </>
@@ -490,5 +474,88 @@ function AdminsSection() {
         <button type="submit" disabled={busy}>{busy ? 'Adding...' : 'Grant admin access'}</button>
       </form>
     </section>
+  )
+}
+
+
+function formatAdminDate(e) {
+  if (!e.event_date) return null
+  const d = new Date(`${e.event_date}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  const date = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const fmt = (t) => {
+    if (!t) return null
+    const [h, m] = t.split(':').map(Number)
+    const ap = h >= 12 ? 'PM' : 'AM'
+    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${ap}`
+  }
+  const start = fmt(e.start_time)
+  return start ? `${date} - ${start}` : date
+}
+
+// Events table (approved admin design): full-width search, category filter,
+// plain EVENT / CATEGORY / DATE AND TIME / VENUE LOCATION / ACTIONS columns.
+// Row descriptions come from the event's real short_description.
+export function AdminEventsTable({ events, onNew, onEdit, busy }) {
+  const [query, setQuery] = useState('')
+  const [cat, setCat] = useState('')
+  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))].sort()
+  const q = query.trim().toLowerCase()
+  const rows = events.filter((e) =>
+    (!cat || e.category === cat) &&
+    (!q || (e.title || '').toLowerCase().includes(q) || (e.short_description || '').toLowerCase().includes(q)))
+  return (
+    <>
+      <div className="admin-toolbar">
+        <div className="search-wrap">
+          <Icon name="search" size={16} />
+          <input type="text" placeholder="Search events" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Filter by category">
+          <option value="">All Categories</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <button type="button" className="btn btn-primary" onClick={onNew} disabled={busy}>
+          <Icon name="plus" /> New Event
+        </button>
+      </div>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Category</th>
+            <th>Date and Time</th>
+            <th>Venue Location</th>
+            <th style={{ textAlign: 'right' }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((e) => (
+            <tr key={e.id}>
+              <td>
+                <div className="cell-title">{e.title}</div>
+                {e.short_description && <div className="cell-sub">{e.short_description}</div>}
+                <div className="cell-sub">{e.lifecycle} &middot; {e.published ? 'published' : 'draft'}</div>
+              </td>
+              <td>{e.category ? <span className="badge">{e.category}</span> : <span className="cell-muted">-</span>}</td>
+              <td className="cell-muted">{formatAdminDate(e) || '-'}</td>
+              <td className="cell-muted">{e.venue || '-'}</td>
+              <td>
+                <div className="row-actions">
+                  <button type="button" className="icon-btn" title="Edit event" onClick={() => onEdit(e)}>
+                    <Icon name="edit" size={16} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={5} className="cell-muted">
+              {events.length === 0 ? 'No events yet. Create the first one.' : 'No events match this search.'}
+            </td></tr>
+          )}
+        </tbody>
+      </table>
+    </>
   )
 }

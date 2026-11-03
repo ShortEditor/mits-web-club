@@ -44,7 +44,7 @@ export default function Layout({ children }) {
         </div>
       )}
       <main className="page">{children}</main>
-      <footer className="footer">Built by Web Club</footer>
+      <footer className="footer">Built by Web Club &middot; Madanapalle Institute of Technology and Science</footer>
     </div>
   )
 }

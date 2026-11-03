@@ -53,6 +53,12 @@ const PATHS = {
       <circle cx="8" cy="8" r="1.6" />
     </>
   ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.8-3.8" />
+    </>
+  ),
   clock: (
     <>
       <circle cx="12" cy="12" r="9" />

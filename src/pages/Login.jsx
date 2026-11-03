@@ -55,18 +55,21 @@ export default function Login() {
   }
 
   return (
-    <section className="auth-box">
+    <section className="card auth-card auth-box">
       <h1>Sign in</h1>
       {mode === 'password' && (
         <>
           <p className="muted">For registered MITS students and faculty.</p>
           <form onSubmit={signIn}>
-            <label>Email <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-            <label>Password <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-            <button className="btn" type="submit">Sign in</button>
+            <label className="field"><span>Email</span><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+            <label className="field"><span>Password</span><input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+            <button className="btn btn-primary" type="submit">Sign in</button>
           </form>
           {GOOGLE_ENABLED && (
-            <p><button className="btn btn-secondary" type="button" onClick={google}>Continue with Google</button></p>
+            <>
+              <div className="divider">or</div>
+              <p><button className="btn btn-secondary" type="button" onClick={google} style={{ width: '100%' }}>Continue with Google</button></p>
+            </>
           )}
           <p className="muted">
             First time here?{' '}
@@ -80,8 +83,8 @@ export default function Login() {
         <>
           <p className="muted">Enter your email. We will send a 6-digit code to verify it - no password needed yet.</p>
           <form onSubmit={send}>
-            <label>Email <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-            <button className="btn" type="submit">Send code</button>
+            <label className="field"><span>Email</span><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+            <button className="btn btn-primary" type="submit">Send code</button>
           </form>
           <p className="muted"><button className="linklike" type="button" onClick={() => { setMsg(null); setMode('password') }}>Back to password sign-in</button></p>
         </>
@@ -90,8 +93,8 @@ export default function Login() {
         <>
           <p className="muted">Enter the 6-digit code we emailed to {email}.</p>
           <form onSubmit={verify}>
-            <label>6-digit code <input inputMode="numeric" pattern="[0-9]{6}" required value={code} onChange={(e) => setCode(e.target.value)} /></label>
-            <button className="btn" type="submit">Verify</button>
+            <label className="field"><span>6-digit code</span><input inputMode="numeric" pattern="[0-9]{6}" required value={code} onChange={(e) => setCode(e.target.value)} /></label>
+            <button className="btn btn-primary" type="submit">Verify</button>
           </form>
         </>
       )}
@@ -99,9 +102,9 @@ export default function Login() {
         <>
           <p className="muted">Email verified. Set a password for future sign-ins.</p>
           <form onSubmit={savePassword}>
-            <label>Your name <input type="text" required value={name} onChange={(e) => setName(e.target.value)} /></label>
-            <label>New password (min 8 characters) <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-            <button className="btn" type="submit">Save password and sign in</button>
+            <label className="field"><span>Your name</span><input type="text" required value={name} onChange={(e) => setName(e.target.value)} /></label>
+            <label className="field"><span>New password (min 8 characters)</span><input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+            <button className="btn btn-primary" type="submit">Save password and sign in</button>
           </form>
         </>
       )}
