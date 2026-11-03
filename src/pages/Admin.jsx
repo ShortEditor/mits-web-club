@@ -4,7 +4,9 @@ import {
   uploadMedia, addGalleryImage, removeGalleryImage,
   getEventDocument, upsertEventDocument, listGallery, mediaUrl,
   listMembers, addMember, listParticipants, addParticipant, removeParticipant,
-  listAdminDirectory, addAdminByEmail, deleteEvent, duplicateEvent, updateGalleryImage } from '../lib/api'
+  listAdminDirectory, addAdminByEmail, deleteEvent, duplicateEvent, updateGalleryImage,
+  listFacultyDirectory, addFacultyByEmail, removeFacultyByEmail } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import Icon from '../components/Icon'
 
 // Admin panel: manage events, posters, gallery images and admin-only
@@ -20,6 +22,7 @@ const EMPTY_EVENT = {
 }
 
 export default function Admin() {
+  const { isAdmin } = useAuth()
   const [events, setEvents] = useState([])
   const [selected, setSelected] = useState(null)   // event row being edited, or 'new'
   const [error, setError] = useState('')
@@ -85,12 +88,19 @@ export default function Admin() {
           <button type="button" role="tab" aria-selected={tab === 'events'} className={tab === 'events' ? 'active' : ''} onClick={() => setTab('events')}>
             <Icon name="calendar" /> Events Directory
           </button>
-          <button type="button" role="tab" aria-selected={tab === 'admins'} className={tab === 'admins' ? 'active' : ''} onClick={() => setTab('admins')}>
-            <Icon name="shield" /> Access &amp; Privileges
-          </button>
+          {isAdmin && (
+            <button type="button" role="tab" aria-selected={tab === 'admins'} className={tab === 'admins' ? 'active' : ''} onClick={() => setTab('admins')}>
+              <Icon name="shield" /> Access &amp; Privileges
+            </button>
+          )}
         </div>
       )}
-      {!selected && tab === 'admins' && <AdminsSection />}
+      {!selected && tab === 'admins' && isAdmin && (
+        <>
+          <AdminsSection />
+          <FacultySection />
+        </>
+      )}
       {!selected && tab === 'events' && (
         <>
           <section>
@@ -99,7 +109,7 @@ export default function Admin() {
             <p className="muted">All published, draft and completed events.</p>
             <AdminEventsTable events={events} onNew={() => setSelected('new')} onEdit={setSelected} onDelete={removeEvent} onDuplicate={copyEvent} busy={busy} />
           </section>
-          <MembersSection />
+          {isAdmin && <MembersSection />}
         </>
       )}
       {selected && (
@@ -115,6 +125,7 @@ export default function Admin() {
 }
 
 function EventEditor({ event, onDone, onCancel }) {
+  const { isAdmin } = useAuth()
   const [form, setForm] = useState(event ? { ...EMPTY_EVENT, ...event } : EMPTY_EVENT)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(null) // persisted event row (for uploads)
@@ -189,7 +200,7 @@ function EventEditor({ event, onDone, onCancel }) {
       )}
       {persisted && <EventAssets event={persisted} onChanged={onDone} />}
       {persisted && <ParticipantsEditor event={persisted} />}
-      {persisted && <DocEditor event={persisted} />}
+      {persisted && isAdmin && <DocEditor event={persisted} />}
     </section>
   )
 }
@@ -697,5 +708,71 @@ export function AdminEventsTable({ events, onNew, onEdit, onDelete, onDuplicate,
         </tbody>
       </table>
     </>
+  )
+}
+
+// Faculty editors: admins assign faculty event-management access by email
+// (user direction 2026-11-03: never self-assigned at login). Faculty editors
+// can create, edit and delete events; documentation stays admin-only.
+function FacultySection() {
+  const [editors, setEditors] = useState([])
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const refresh = useCallback(async () => {
+    setError('')
+    try { setEditors(await listFacultyDirectory()) } catch (e) { setError(e.message) }
+  }, [])
+  useEffect(() => { refresh() }, [refresh])
+
+  async function add(ev) {
+    ev.preventDefault()
+    setBusy(true); setError(''); setOk('')
+    try {
+      const res = await addFacultyByEmail(email.trim())
+      if (res && res.added) {
+        setOk(`${email.trim()} can now manage events as faculty.`)
+        setEmail('')
+        await refresh()
+      } else {
+        setError('No account exists for that email yet. Ask them to sign in on the site once, then add them here.')
+      }
+    } catch (e2) { setError(e2.message) }
+    finally { setBusy(false) }
+  }
+
+  async function remove(target) {
+    if (!window.confirm(`Remove event-management access for ${target}?`)) return
+    setBusy(true); setError(''); setOk('')
+    try { await removeFacultyByEmail(target); await refresh() }
+    catch (e2) { setError(e2.message) }
+    finally { setBusy(false) }
+  }
+
+  return (
+    <section className="card">
+      <div className="card-head"><Icon name="users" size={20} /><h2>Faculty editors</h2></div>
+      <p className="muted">Assigned faculty can create, edit and delete events and manage event photos. Documentation and access control stay admin-only.</p>
+      {error && <p className="notice">{error}</p>}
+      {ok && <p className="notice-ok">{ok}</p>}
+      <ul className="admin-list">
+        {editors.map((f) => (
+          <li key={f.user_id}>
+            <span className="item-title">{f.email}</span>
+            {' '}<button type="button" className="linklike" disabled={busy} onClick={() => remove(f.email)}>remove</button>
+          </li>
+        ))}
+        {editors.length === 0 && !error && <li className="muted">No faculty editors assigned yet.</li>}
+      </ul>
+      <form onSubmit={add} className="admin-form" style={{ marginTop: 16 }}>
+        <label>Assign faculty editor by email*
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="faculty@example.com" />
+        </label>
+        <p className="hint muted">They must have signed in on this site at least once. The change applies in the database immediately.</p>
+        <button type="submit" disabled={busy}>{busy ? 'Assigning...' : 'Assign faculty editor'}</button>
+      </form>
+    </section>
   )
 }

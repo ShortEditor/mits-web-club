@@ -219,6 +219,24 @@ export async function addMember(fields) {
   return data
 }
 
+export async function listFacultyDirectory() {
+  const { data, error } = await supabase.rpc('faculty_editor_directory')
+  if (error) throw error
+  return data
+}
+
+export async function addFacultyByEmail(email) {
+  const { data, error } = await supabase.rpc('add_faculty_editor_by_email', { target_email: email })
+  if (error) throw error
+  return data
+}
+
+export async function removeFacultyByEmail(email) {
+  const { data, error } = await supabase.rpc('remove_faculty_editor_by_email', { target_email: email })
+  if (error) throw error
+  return data
+}
+
 export async function listParticipants(eventId) {
   const { data, error } = await supabase
     .from('event_participants')

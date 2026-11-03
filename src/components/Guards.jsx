@@ -29,3 +29,16 @@ export function RequireAdmin({ children }) {
   if (!isAdmin) return <p className="muted">This area is limited to Web Club admins.</p>
   return children
 }
+
+// Event management area: admins and admin-assigned faculty editors only.
+export function RequireEditor({ children }) {
+  const { session, isAdmin, isFacultyEditor, loading } = useAuth()
+  const loc = useLocation()
+  if (loading) return <p className="muted">Loading…</p>
+  if (isMisconfigured) {
+    return <p className="notice">This site is not connected to its backend yet.</p>
+  }
+  if (!session) return <Navigate to="/login" state={{ from: loc.pathname }} replace />
+  if (!isAdmin && !isFacultyEditor) return <p className="muted">This area is limited to Web Club admins and assigned faculty editors.</p>
+  return children
+}

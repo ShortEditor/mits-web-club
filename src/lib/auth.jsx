@@ -11,6 +11,7 @@ const AuthCtx = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isFacultyEditor, setIsFacultyEditor] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,9 +25,11 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    if (!supabase || !session?.user) { setIsAdmin(false); return }
+    if (!supabase || !session?.user) { setIsAdmin(false); setIsFacultyEditor(false); return }
     supabase.from('admins').select('user_id').eq('user_id', session.user.id)
       .then(({ data }) => setIsAdmin((data || []).length > 0))
+    supabase.from('faculty_editors').select('user_id').eq('user_id', session.user.id)
+      .then(({ data }) => setIsFacultyEditor((data || []).length > 0))
   }, [session])
 
   const requestOtp = (email) =>
@@ -35,12 +38,13 @@ export function AuthProvider({ children }) {
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.verifyOtp({ email, token, type: 'email' })
   const signInWithPassword = (email, password) =>
     !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.signInWithPassword({ email, password })
-  const setPassword = (password, fullName, role) =>
-    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password, data: { full_name: fullName, role: role === 'faculty' ? 'faculty' : 'student' } })
-  // Post-login profile completion (any provider, incl. Google): self-declared
-  // name/role only - grants no access, never marks anyone verified.
-  const saveProfile = (fullName, role) =>
-    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ data: { full_name: fullName, role: role === 'faculty' ? 'faculty' : 'student' } })
+  const setPassword = (password, fullName) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ password, data: { full_name: fullName } })
+  // Post-login name completion (any provider, incl. Google). Display only.
+  // Roles are NEVER self-declared here: faculty/admin authority is assigned
+  // server-side by an existing admin (user direction 2026-11-03).
+  const saveProfile = (fullName) =>
+    !supabase ? Promise.resolve({ error: { message: 'Backend not connected' } }) : supabase.auth.updateUser({ data: { full_name: fullName } })
   const signInWithGoogle = () =>
     !supabase
       ? Promise.resolve({ error: { message: 'Backend not connected' } })
@@ -48,7 +52,7 @@ export function AuthProvider({ children }) {
   const signOut = () => (!supabase ? Promise.resolve() : supabase.auth.signOut())
 
   return (
-    <AuthCtx.Provider value={{ session, isAdmin, loading, isDemoMode, isMisconfigured, requestOtp, verifyOtp, signInWithPassword, setPassword, saveProfile, signInWithGoogle, signOut }}>
+    <AuthCtx.Provider value={{ session, isAdmin, isFacultyEditor, loading, isDemoMode, isMisconfigured, requestOtp, verifyOtp, signInWithPassword, setPassword, saveProfile, signInWithGoogle, signOut }}>
       {children}
     </AuthCtx.Provider>
   )
