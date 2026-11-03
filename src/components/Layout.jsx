@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import Icon from './Icon'
 import { useAuth } from '../lib/auth'
 
 // Sticky branding header: college crest LEFT, club name CENTER (the official
@@ -22,14 +23,14 @@ export default function Layout({ children }) {
         <img src="/brand/sac-crest.jpg" alt="Student Activity Center crest" className="brand-crest" />
       </header>
       <nav className="main-nav">
-        <NavLink to="/" end>Home</NavLink>
+        <NavLink to="/" end><Icon name="home" />Home</NavLink>
         {session || isDemoMode ? (
           <>
-            <NavLink to="/events">Events</NavLink>
-            <NavLink to="/past-events">Past Events</NavLink>
+            <NavLink to="/events"><Icon name="calendar" />Events</NavLink>
+            <NavLink to="/past-events"><Icon name="clock" />Past Events</NavLink>
           </>
         ) : null}
-        {isAdmin && <NavLink to="/admin">Admin</NavLink>}
+        {isAdmin && <NavLink to="/admin"><Icon name="shield" />Admin</NavLink>}
         <span className="nav-spacer" />
         {session ? (
           <button className="link-btn" onClick={signOut}>Sign out</button>
@@ -38,12 +39,12 @@ export default function Layout({ children }) {
         )}
       </nav>
       {session && (
-        <div className="welcome-strip">
+        <div className="welcome-strip"><Icon name="users" size={15} />
           Welcome{displayName(session.user) ? `, ${displayName(session.user)}` : ''}! You are signed in{isAdmin ? ' as an admin' : ''} as {session.user.email}
         </div>
       )}
       <main className="page">{children}</main>
-      <footer className="site-footer">Built by Web Club</footer>
+      <footer className="footer">Built by Web Club &middot; Madanapalle Institute of Technology and Science</footer>
     </div>
   )
 }

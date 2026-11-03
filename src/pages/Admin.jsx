@@ -4,7 +4,9 @@ import {
   uploadMedia, addGalleryImage, removeGalleryImage,
   getEventDocument, upsertEventDocument, listGallery, mediaUrl,
   listMembers, addMember, listParticipants, addParticipant, removeParticipant,
+  listAdminDirectory, addAdminByEmail,
 } from '../lib/api'
+import Icon from '../components/Icon'
 
 // Admin panel: manage events, posters, gallery images and admin-only
 // documentation. Every write goes through Supabase; RLS on the admins
@@ -35,42 +37,45 @@ export default function Admin() {
 
   useEffect(() => { refresh() }, [refresh])
 
+  const [tab, setTab] = useState('events')
+
   return (
     <>
-      <h1>Admin panel</h1>
-      <p className="muted">
-        Manage club events. Only seeded admin accounts can reach this page -
-        self-signup never grants admin access.
-      </p>
+      <div className="admin-hero">
+        <div>
+          <h1>Club Admin Dashboard</h1>
+          <p>Create, edit and manage club events.</p>
+        </div>
+      </div>
       {error && <p className="notice">{error}</p>}
-      {!selected && <MembersSection />}
-      {selected ? (
+      {!selected && (
+        <div className="tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === 'events'} className={tab === 'events' ? 'active' : ''} onClick={() => setTab('events')}>
+            <Icon name="calendar" /> Events Directory
+          </button>
+          <button type="button" role="tab" aria-selected={tab === 'admins'} className={tab === 'admins' ? 'active' : ''} onClick={() => setTab('admins')}>
+            <Icon name="shield" /> Access &amp; Privileges
+          </button>
+        </div>
+      )}
+      {!selected && tab === 'admins' && <AdminsSection />}
+      {!selected && tab === 'events' && (
+        <>
+          <section>
+            <div className="card-head"><Icon name="calendar" size={20} /><h2>Events Management</h2></div>
+            <p className="muted">All published, draft and completed events.</p>
+            <AdminEventsTable events={events} onNew={() => setSelected('new')} onEdit={setSelected} busy={busy} />
+          </section>
+          <MembersSection />
+        </>
+      )}
+      {selected && (
         <EventEditor
           key={selected === 'new' ? 'new' : selected.id}
           event={selected === 'new' ? null : selected}
           onDone={() => { setSelected(null); refresh() }}
           onCancel={() => setSelected(null)}
         />
-      ) : (
-        <>
-          <button type="button" onClick={() => setSelected('new')} disabled={busy}>
-            New event
-          </button>
-          <ul className="admin-list">
-            {events.map((e) => (
-              <li key={e.id}>
-                <button type="button" className="linklike" onClick={() => setSelected(e)}>
-                  {e.title}
-                </button>
-                <span className="muted">
-                  {' '}- {e.lifecycle}, {e.published ? 'published' : 'draft'}
-                  {e.event_date ? `, ${e.event_date}` : ''}
-                </span>
-              </li>
-            ))}
-            {events.length === 0 && <li className="muted">No events yet.</li>}
-          </ul>
-        </>
       )}
     </>
   )
@@ -111,8 +116,8 @@ function EventEditor({ event, onDone, onCancel }) {
   const persisted = saved || event
 
   return (
-    <section>
-      <h2>{event ? `Edit: ${event.title}` : 'New event'}</h2>
+    <section className="card">
+      <div className="card-head"><Icon name="edit" size={20} /><h2>{event ? `Edit: ${event.title}` : 'New event'}</h2></div>
       {error && <p className="notice">{error}</p>}
       <form onSubmit={save} className="admin-form">
         <label>Title* <input required value={form.title} onChange={set('title')} /></label>
@@ -192,8 +197,8 @@ function EventAssets({ event, onChanged }) {
   }
 
   return (
-    <section className="admin-assets">
-      <h3>Poster and gallery</h3>
+    <section className="card admin-assets">
+      <div className="card-head"><Icon name="image" size={18} /><h3>Poster and gallery</h3></div>
       {error && <p className="notice">{error}</p>}
       <p>Current poster: {event.poster_path ? <code>{event.poster_path}</code> : 'none'}</p>
       <label>Upload poster <input type="file" accept="image/*" disabled={busy} onChange={(e) => upload(e, 'poster')} /></label>
@@ -261,11 +266,8 @@ function DocEditor({ event }) {
   const setD = (k) => (ev) => setDoc((cur) => ({ ...(cur || {}), [k]: ev.target.value }))
 
   return (
-    <section className="admin-docs">
-      <h3>Documentation (admin-only)</h3>
-      <p className="muted">
-        Visible only to admins - enforced in the database and storage policies, not just here.
-      </p>
+    <section className="card admin-docs">
+      <div className="card-head"><Icon name="doc" size={18} /><h3>Documentation (visible only to admins)</h3></div>
       {error && <p className="notice">{error}</p>}
       <form onSubmit={saveDoc} className="admin-form">
         <label>Objectives <textarea rows={2} value={d.objectives || ''} onChange={setD('objectives')} /></label>
@@ -316,19 +318,16 @@ function MembersSection() {
   const set = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }))
 
   return (
-    <section className="admin-assets">
-      <h3>
+    <section className="card admin-assets">
+      <div className="card-head"><Icon name="users" size={18} /><h3>
         Registered members{' '}
         <button type="button" className="linklike" onClick={() => setOpen((o) => !o)}>
           {open ? 'hide' : 'show'}
         </button>
-      </h3>
+      </h3></div>
       {!open ? null : (
         <>
-          <p className="muted">
-            Students and faculty registered as viewers. Registering someone here never
-            grants admin; that is seeded separately in the admins table.
-          </p>
+          <p className="muted">Students and faculty registered as viewers. Member registration does not grant admin access.</p>
           {error && <p className="notice">{error}</p>}
           <form onSubmit={add} className="admin-form">
             <label>Name* <input required value={form.name} onChange={set('name')} /></label>
@@ -396,8 +395,8 @@ function ParticipantsEditor({ event }) {
   const set = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }))
 
   return (
-    <section className="admin-assets">
-      <h3>Participants ({rows.length})</h3>
+    <section className="card admin-assets">
+      <div className="card-head"><Icon name="users" size={18} /><h3>Participants ({rows.length})</h3></div>
       <p className="muted">Per-event registry: name, roll number, department, section. No contact details or attendance.</p>
       {error && <p className="notice">{error}</p>}
       <form onSubmit={add} className="admin-form">
@@ -418,5 +417,145 @@ function ParticipantsEditor({ event }) {
         {rows.length === 0 && <li className="muted">No participants recorded.</li>}
       </ul>
     </section>
+  )
+}
+
+function AdminsSection() {
+  const [admins, setAdmins] = useState([])
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const refresh = useCallback(async () => {
+    setError('')
+    try { setAdmins(await listAdminDirectory()) } catch (e) { setError(e.message) }
+  }, [])
+  useEffect(() => { refresh() }, [refresh])
+
+  async function add(ev) {
+    ev.preventDefault()
+    setBusy(true); setError(''); setOk('')
+    try {
+      const res = await addAdminByEmail(email.trim())
+      if (res && res.added) {
+        setOk(`${email.trim()} is now an admin.`)
+        setEmail('')
+        await refresh()
+      } else {
+        setError('No account exists for that email yet. Ask them to sign in on the site once, then add them here.')
+      }
+    } catch (e2) {
+      setError(e2.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card">
+      <div className="card-head"><Icon name="shield" size={20} /><h2>Admins</h2></div>
+      <p className="muted">Admins can manage events and grant admin access to other signed-up accounts.</p>
+      {error && <p className="notice">{error}</p>}
+      {ok && <p className="notice-ok">{ok}</p>}
+      <ul className="admin-list">
+        {admins.map((a) => (
+          <li key={a.user_id}>
+            <span className="item-title">{a.email}</span>
+          </li>
+        ))}
+        {admins.length === 0 && !error && <li className="muted">Loading...</li>}
+      </ul>
+      <form onSubmit={add} className="admin-form" style={{ marginTop: 16 }}>
+        <label>Add admin by email*
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="person@example.com" />
+        </label>
+        <p className="hint muted">They must have signed in on this site at least once. The change applies in the database immediately.</p>
+        <button type="submit" disabled={busy}>{busy ? 'Adding...' : 'Grant admin access'}</button>
+      </form>
+    </section>
+  )
+}
+
+
+function formatAdminDate(e) {
+  if (!e.event_date) return null
+  const d = new Date(`${e.event_date}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  const date = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const fmt = (t) => {
+    if (!t) return null
+    const [h, m] = t.split(':').map(Number)
+    const ap = h >= 12 ? 'PM' : 'AM'
+    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${ap}`
+  }
+  const start = fmt(e.start_time)
+  return start ? `${date} - ${start}` : date
+}
+
+// Events table (approved admin design): full-width search, category filter,
+// plain EVENT / CATEGORY / DATE AND TIME / VENUE LOCATION / ACTIONS columns.
+// Row descriptions come from the event's real short_description.
+export function AdminEventsTable({ events, onNew, onEdit, busy }) {
+  const [query, setQuery] = useState('')
+  const [cat, setCat] = useState('')
+  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))].sort()
+  const q = query.trim().toLowerCase()
+  const rows = events.filter((e) =>
+    (!cat || e.category === cat) &&
+    (!q || (e.title || '').toLowerCase().includes(q) || (e.short_description || '').toLowerCase().includes(q)))
+  return (
+    <>
+      <div className="admin-toolbar">
+        <div className="search-wrap">
+          <Icon name="search" size={16} />
+          <input type="text" placeholder="Search events" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Filter by category">
+          <option value="">All Categories</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <button type="button" className="btn btn-primary" onClick={onNew} disabled={busy}>
+          <Icon name="plus" /> New Event
+        </button>
+      </div>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Category</th>
+            <th>Date and Time</th>
+            <th>Venue Location</th>
+            <th style={{ textAlign: 'right' }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((e) => (
+            <tr key={e.id}>
+              <td>
+                <div className="cell-title">{e.title}</div>
+                {e.short_description && <div className="cell-sub">{e.short_description}</div>}
+                <div className="cell-sub">{e.lifecycle} &middot; {e.published ? 'published' : 'draft'}</div>
+              </td>
+              <td>{e.category ? <span className="badge">{e.category}</span> : <span className="cell-muted">-</span>}</td>
+              <td className="cell-muted">{formatAdminDate(e) || '-'}</td>
+              <td className="cell-muted">{e.venue || '-'}</td>
+              <td>
+                <div className="row-actions">
+                  <button type="button" className="icon-btn" title="Edit event" onClick={() => onEdit(e)}>
+                    <Icon name="edit" size={16} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={5} className="cell-muted">
+              {events.length === 0 ? 'No events yet. Create the first one.' : 'No events match this search.'}
+            </td></tr>
+          )}
+        </tbody>
+      </table>
+    </>
   )
 }

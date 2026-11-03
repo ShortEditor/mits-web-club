@@ -174,3 +174,17 @@ export async function removeParticipant(id) {
   const { error } = await supabase.from('event_participants').delete().eq('id', id)
   if (error) throw error
 }
+
+// Admin management (migration 0003): server-enforced RPCs. The functions
+// re-check is_admin() inside the database, so a non-admin session gets an error.
+export async function listAdminDirectory() {
+  const { data, error } = await supabase.rpc('admin_directory')
+  if (error) throw error
+  return data || []
+}
+
+export async function addAdminByEmail(email) {
+  const { data, error } = await supabase.rpc('add_admin_by_email', { target_email: email })
+  if (error) throw error
+  return data
+}
