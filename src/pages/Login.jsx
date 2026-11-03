@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth'
 // - Returning users: email + password, or Continue with Google.
 // - First time: verify email with a 6-digit code, then set a password.
 // Self-signup never grants admin; admins are seeded separately.
-const GOOGLE_ENABLED = false // Google provider is configured in Supabase; keep in sync.
+const GOOGLE_ENABLED = true // Google provider configured + consent screen in production (2026-11-03).
 
 export default function Login() {
   const { requestOtp, verifyOtp, signInWithPassword, setPassword: saveAccountPassword, signInWithGoogle, isDemoMode, isMisconfigured } = useAuth()
