@@ -1,6 +1,6 @@
 /* MITS Web Club theme - practical institutional design approved 2026-11-03.
-   Tokens from the approved Stitch screen: white/navy, Merriweather headings,
-   Inter body, calendar-style event rows. */
+   Tokens from the approved Stitch screen: white/navy, Roboto throughout (user request),
+   calendar-style event rows. */
 :root {
   --navy: #00163d;
   --navy-soft: #0f2b5c;
@@ -14,8 +14,8 @@
   --error: #ba1a1a;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.55; }
-h1, h2, h3 { font-family: 'Merriweather', Georgia, serif; color: var(--navy); line-height: 1.25; }
+body { margin: 0; font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--navy); line-height: 1.25; }
 a { color: var(--navy-soft); }
 
 .site-shell { min-height: 100vh; display: flex; flex-direction: column; }
@@ -51,7 +51,7 @@ a { color: var(--navy-soft); }
 .event-row { display: flex; align-items: center; gap: 24px; padding: 22px 8px; border-bottom: 1px solid var(--line); }
 .date-badge { flex: 0 0 88px; background: var(--badge-bg); border-radius: 2px; text-align: center; padding: 12px 4px; }
 .date-badge .dow { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.date-badge .md { display: block; font-family: 'Merriweather', Georgia, serif; font-size: 1.25rem; color: var(--navy); margin-top: 2px; }
+.date-badge .md { display: block; font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1.25rem; color: var(--navy); margin-top: 2px; }
 .event-row .row-main { flex: 1; min-width: 0; }
 .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
 .tag { background: var(--badge-bg); color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; }

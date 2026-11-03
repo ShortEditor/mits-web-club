@@ -97,10 +97,12 @@ alter table public.members enable row level security;
 alter table public.event_participants enable row level security;
 alter table public.admins enable row level security;
 
--- EVENTS: SIGN-IN REQUIRED (settled 2026-11-03): only authenticated users read
--- published events; drafts/lifecycle internals are admin-only. No anon access.
-create policy events_student_read on public.events for select to authenticated
-  using (published or public.is_admin());
+-- EVENTS: VIEWER ELIGIBILITY HOLD (2026-11-03): who may view (roster vs college
+-- domain vs open signup) is NOT decided by the club yet. Until it is, reads are
+-- admin-only so the first real event cannot silently go public. When decided,
+-- replace this policy: roster -> join members; open signup -> published or is_admin().
+create policy events_admin_read on public.events for select to authenticated
+  using (public.is_admin());
 create policy events_admin_write on public.events for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
@@ -108,9 +110,9 @@ create policy events_admin_write on public.events for all to authenticated
 create policy docs_admin_all on public.event_documents for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
--- GALLERY: SIGN-IN REQUIRED. Authenticated users view images of published events.
-create policy gallery_student_read on public.event_gallery_images for select to authenticated
-  using (exists (select 1 from public.events e where e.id = event_id and e.published) or public.is_admin());
+-- GALLERY: same eligibility hold as events - admin-only until the viewer model is decided.
+create policy gallery_admin_read on public.event_gallery_images for select to authenticated
+  using (public.is_admin());
 create policy gallery_admin_write on public.event_gallery_images for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
