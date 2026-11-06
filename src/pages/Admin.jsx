@@ -4,6 +4,7 @@ import {
   uploadMedia, addGalleryImage, removeGalleryImage,
   getEventDocument, upsertEventDocument, listGallery, mediaUrl,
   listMembers, addMember, listRegistrations, saveAttendance,
+  listParticipants, addParticipant, removeParticipant,
   listAdminDirectory, addAdminByEmail, deleteEvent, duplicateEvent, updateGalleryImage,
   listFacultyDirectory, addFacultyByEmail, removeFacultyByEmail } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -209,6 +210,7 @@ export function EventEditor({ event, onDone, onCancel }) {
       )}
       {persisted && <EventAssets event={persisted} onChanged={onDone} />}
       {persisted && <RegistrationsPanel event={persisted} />}
+      {persisted && isAdmin && <ParticipantsEditor event={persisted} />}
       {persisted && isAdmin && <DocEditor event={persisted} />}
     </section>
   )
@@ -604,6 +606,84 @@ function RegistrationsPanel({ event }) {
           </div>
         </>
       )}
+    </section>
+  )
+}
+
+// Legacy admin-managed participant registry (kept per review 2026-11-06: no
+// assumption that self-registration replaced manual adds). Admin-only - its RLS
+// has always been admin-only. Distinct from event_registrations, which students
+// create themselves and which carries attendance.
+function ParticipantsEditor({ event }) {
+  const [rows, setRows] = useState([])
+  const [form, setForm] = useState({ roll_number: '', name: '', department: '', section: '' })
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const refresh = useCallback(async () => {
+    try { setRows(await listParticipants(event.id)) } catch (e) { setError(e.message) }
+  }, [event.id])
+  useEffect(() => { refresh() }, [refresh])
+
+  async function add(ev) {
+    ev.preventDefault()
+    setBusy(true); setError('')
+    try {
+      await addParticipant(event.id, {
+        roll_number: form.roll_number,
+        name: form.name,
+        department: form.department || null,
+        section: form.section || null,
+      })
+      setForm({ roll_number: '', name: '', department: '', section: '' })
+      await refresh()
+    } catch (e2) { setError(e2.message) }
+    finally { setBusy(false) }
+  }
+
+  async function remove(id) {
+    if (!window.confirm('Remove this participant row?')) return
+    setBusy(true); setError('')
+    try { await removeParticipant(id); await refresh() } catch (e) { setError(e.message) }
+    finally { setBusy(false) }
+  }
+
+  const set = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }))
+
+
+  async function move(a, b) {
+    if (!b) return
+    setBusy(true); setError('')
+    try {
+      await updateGalleryImage(a.id, { display_order: b.display_order })
+      await updateGalleryImage(b.id, { display_order: a.display_order })
+      await refresh()
+    } catch (e) { setError(e.message) }
+    finally { setBusy(false) }
+  }
+
+  return (
+    <section className="card admin-assets">
+      <div className="card-head"><Icon name="users" size={18} /><h3>Participants ({rows.length})</h3></div>
+      <p className="muted">Manual per-event list (admin): name, roll number, department, section. Self-registered students and attendance live in the Registrations &amp; attendance section above.</p>
+      {error && <p className="notice">{error}</p>}
+      <form onSubmit={add} className="admin-form">
+        <label>Roll number* <input required value={form.roll_number} onChange={set('roll_number')} /></label>
+        <label>Name* <input required value={form.name} onChange={set('name')} /></label>
+        <label>Department <input value={form.department} onChange={set('department')} /></label>
+        <label>Section <input value={form.section} onChange={set('section')} /></label>
+        <button type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add participant'}</button>
+      </form>
+      <ul className="admin-list">
+        {rows.map((r) => (
+          <li key={r.id}>
+            {r.roll_number} - {r.name}
+            <span className="muted">{r.department ? `, ${r.department}` : ''}{r.section ? ` ${r.section}` : ''}</span>{' '}
+            <button type="button" disabled={busy} onClick={() => remove(r.id)}>Remove</button>
+          </li>
+        ))}
+        {rows.length === 0 && <li className="muted">No participants recorded.</li>}
+      </ul>
     </section>
   )
 }
