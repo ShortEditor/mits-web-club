@@ -325,3 +325,20 @@ section.card { margin-top: 20px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Registration panel (student view) + attendance marking (faculty) - 2026-11-06 */
+.registration-panel { margin: 22px 0; }
+.registration-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 20px; margin: 0 0 12px; }
+.registration-details dt { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.registration-details dd { margin: 2px 0 0; font-weight: 600; color: var(--ink); }
+.attendance-line { margin: 4px 0 0; }
+.att-badge { display: inline-block; padding: 2px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; }
+.att-badge.att-present { background: #e3f2e9; color: var(--ok); }
+.att-badge.att-absent { background: #fbe7e7; color: var(--error); }
+.attendance-totals { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 0.95rem; margin: 4px 0 12px; }
+.att-actions { display: inline-flex; gap: 6px; }
+button.att-btn { padding: 5px 12px; font-size: 0.8rem; }
+button.att-btn.att-on-present, button.att-btn.att-on-present:hover:not(:disabled) { background: var(--ok); border-color: var(--ok); color: #fff; }
+button.att-btn.att-on-absent, button.att-btn.att-on-absent:hover:not(:disabled) { background: var(--error); border-color: var(--error); color: #fff; }
+.att-savebar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.table-wrap { overflow-x: auto; }

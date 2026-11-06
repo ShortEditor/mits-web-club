@@ -3,11 +3,12 @@ import {
   listAllEvents, createEvent, updateEvent, slugify,
   uploadMedia, addGalleryImage, removeGalleryImage,
   getEventDocument, upsertEventDocument, listGallery, mediaUrl,
-  listMembers, addMember, listParticipants, addParticipant, removeParticipant,
+  listMembers, addMember, listRegistrations, saveAttendance,
   listAdminDirectory, addAdminByEmail, deleteEvent, duplicateEvent, updateGalleryImage,
   listFacultyDirectory, addFacultyByEmail, removeFacultyByEmail } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import Icon from '../components/Icon'
+import { downloadAttendanceSheet } from '../lib/excel'
 
 // Admin panel: manage events, posters, gallery images and admin-only
 // documentation. Every write goes through Supabase; RLS on the admins
@@ -17,7 +18,7 @@ import Icon from '../components/Icon'
 const EMPTY_EVENT = {
   title: '', slug: '', short_description: '', description: '',
   event_date: '', start_time: '', end_time: '', venue: '', category: '',
-  eligibility: '', rules: '', guidelines: '', schedule: '', prizes: '',
+  eligibility: '', rules: '', prizes: '',
   external_registration_url: '', lifecycle: 'ongoing', published: false,
 }
 
@@ -124,11 +125,12 @@ export default function Admin() {
   )
 }
 
-function EventEditor({ event, onDone, onCancel }) {
+export function EventEditor({ event, onDone, onCancel }) {
   const { isAdmin } = useAuth()
   const [form, setForm] = useState(event ? { ...EMPTY_EVENT, ...event } : EMPTY_EVENT)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(null) // persisted event row (for uploads)
+  const [posterFile, setPosterFile] = useState(null) // poster chosen in the form, uploaded on save
   const [busy, setBusy] = useState(false)
 
   const set = (k) => (ev) => {
@@ -149,7 +151,13 @@ function EventEditor({ event, onDone, onCancel }) {
     delete fields.id; delete fields.created_at; delete fields.updated_at
     try {
       const row = event ? await updateEvent(event.id, fields) : await createEvent(fields)
-      setSaved(row)
+      let finalRow = row
+      if (posterFile) {
+        const path = await uploadMedia('poster', row.id, posterFile)
+        finalRow = await updateEvent(row.id, { poster_path: path })
+        setPosterFile(null)
+      }
+      setSaved(finalRow)
     } catch (e2) {
       setError(e2.message)
     } finally {
@@ -158,6 +166,7 @@ function EventEditor({ event, onDone, onCancel }) {
   }
 
   const persisted = saved || event
+  const persistedPoster = persisted?.poster_path
 
   return (
     <section className="card">
@@ -166,6 +175,8 @@ function EventEditor({ event, onDone, onCancel }) {
       <form onSubmit={save} className="admin-form">
         <label>Title* <input required value={form.title} onChange={set('title')} /></label>
         <label>Slug (URL) <input value={form.slug} onChange={set('slug')} placeholder="auto from title" /></label>
+        <label>Event poster <input type="file" accept="image/*" onChange={(ev) => setPosterFile(ev.target.files?.[0] || null)} /></label>
+        {persistedPoster && !posterFile && <p className="hint muted">A poster is already attached; it stays unless you choose a new file above.</p>}
         <label>Short description <input value={form.short_description || ''} onChange={set('short_description')} /></label>
         <label>Full description <textarea rows={4} value={form.description || ''} onChange={set('description')} /></label>
         <label>Date <input type="date" value={form.event_date || ''} onChange={set('event_date')} /></label>
@@ -174,9 +185,7 @@ function EventEditor({ event, onDone, onCancel }) {
         <label>Venue <input value={form.venue || ''} onChange={set('venue')} /></label>
         <label>Category <input value={form.category || ''} onChange={set('category')} placeholder="Workshop, Bootcamp, ..." /></label>
         <label>Eligibility <input value={form.eligibility || ''} onChange={set('eligibility')} /></label>
-        <label>Rules <textarea rows={3} value={form.rules || ''} onChange={set('rules')} /></label>
-        <label>Guidelines <textarea rows={3} value={form.guidelines || ''} onChange={set('guidelines')} /></label>
-        <label>Schedule <textarea rows={3} value={form.schedule || ''} onChange={set('schedule')} /></label>
+        <label>Rules &amp; Guidelines <textarea rows={3} value={form.rules || ''} onChange={set('rules')} /></label>
         <label>Prizes <input value={form.prizes || ''} onChange={set('prizes')} /></label>
         <label>External registration link <input type="url" value={form.external_registration_url || ''} onChange={set('external_registration_url')} /></label>
         <label>Lifecycle{' '}
@@ -199,7 +208,7 @@ function EventEditor({ event, onDone, onCancel }) {
         <p><a href={`/events/${persisted.slug}`} target="_blank" rel="noreferrer">Preview event page (opens the public view)</a></p>
       )}
       {persisted && <EventAssets event={persisted} onChanged={onDone} />}
-      {persisted && <ParticipantsEditor event={persisted} />}
+      {persisted && <RegistrationsPanel event={persisted} />}
       {persisted && isAdmin && <DocEditor event={persisted} />}
     </section>
   )
@@ -480,76 +489,121 @@ function MembersSection() {
   )
 }
 
-function ParticipantsEditor({ event }) {
-  const [rows, setRows] = useState([])
-  const [form, setForm] = useState({ roll_number: '', name: '', department: '', section: '' })
+// Registrations & attendance for one event (user direction 2026-11-06).
+// Admins and the event-owning faculty editor see the registered students list,
+// mark/edit present-absent per student, Save the changes, read the totals and
+// download an Excel copy. RLS enforces the same own-event scope server-side.
+function RegistrationsPanel({ event }) {
+  const [rows, setRows] = useState(null)
+  const [marks, setMarks] = useState({})
+  const [dirty, setDirty] = useState(false)
   const [error, setError] = useState('')
+  const [ok, setOk] = useState('')
   const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
-    try { setRows(await listParticipants(event.id)) } catch (e) { setError(e.message) }
+    setError('')
+    try {
+      const data = await listRegistrations(event.id)
+      setRows(data)
+      const m = {}
+      for (const r of data) m[r.id] = r.attendance_status || null
+      setMarks(m)
+      setDirty(false)
+    } catch (e) { setError(e.message) }
   }, [event.id])
   useEffect(() => { refresh() }, [refresh])
 
-  async function add(ev) {
-    ev.preventDefault()
-    setBusy(true); setError('')
-    try {
-      await addParticipant(event.id, {
-        roll_number: form.roll_number,
-        name: form.name,
-        department: form.department || null,
-        section: form.section || null,
-      })
-      setForm({ roll_number: '', name: '', department: '', section: '' })
-      await refresh()
-    } catch (e2) { setError(e2.message) }
-    finally { setBusy(false) }
+  const list = rows || []
+  const present = list.filter((r) => marks[r.id] === 'present').length
+  const absent = list.filter((r) => marks[r.id] === 'absent').length
+
+  function mark(id, status) {
+    setMarks((m) => ({ ...m, [id]: m[id] === status ? null : status }))
+    setDirty(true)
+    setOk('')
   }
 
-  async function remove(id) {
-    if (!window.confirm('Remove this participant row?')) return
-    setBusy(true); setError('')
-    try { await removeParticipant(id); await refresh() } catch (e) { setError(e.message) }
-    finally { setBusy(false) }
-  }
-
-  const set = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }))
-
-
-  async function move(a, b) {
-    if (!b) return
-    setBusy(true); setError('')
+  async function save() {
+    setBusy(true); setError(''); setOk('')
     try {
-      await updateGalleryImage(a.id, { display_order: b.display_order })
-      await updateGalleryImage(b.id, { display_order: a.display_order })
+      const changed = list
+        .filter((r) => (r.attendance_status || null) !== (marks[r.id] || null))
+        .map((r) => ({ id: r.id, status: marks[r.id] || null }))
+      await saveAttendance(changed)
       await refresh()
+      setOk('Attendance saved.')
     } catch (e) { setError(e.message) }
     finally { setBusy(false) }
   }
 
+  function download() {
+    const merged = list.map((r) => ({ ...r, attendance_status: marks[r.id] || null }))
+    downloadAttendanceSheet(event, merged)
+  }
+
   return (
     <section className="card admin-assets">
-      <div className="card-head"><Icon name="users" size={18} /><h3>Participants ({rows.length})</h3></div>
-      <p className="muted">Per-event registry: name, roll number, department, section. No contact details or attendance.</p>
+      <div className="card-head"><Icon name="users" size={18} /><h3>Registrations &amp; attendance ({list.length})</h3></div>
+      <p className="muted">Students who registered on the event page. Mark Present or Absent, then Save attendance. Download Excel keeps a faculty copy.</p>
       {error && <p className="notice">{error}</p>}
-      <form onSubmit={add} className="admin-form">
-        <label>Roll number* <input required value={form.roll_number} onChange={set('roll_number')} /></label>
-        <label>Name* <input required value={form.name} onChange={set('name')} /></label>
-        <label>Department <input value={form.department} onChange={set('department')} /></label>
-        <label>Section <input value={form.section} onChange={set('section')} /></label>
-        <button type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add participant'}</button>
-      </form>
-      <ul className="admin-list">
-        {rows.map((r) => (
-          <li key={r.id}>
-            {r.roll_number} - {r.name}
-            <span className="muted">{r.department ? `, ${r.department}` : ''}{r.section ? ` ${r.section}` : ''}</span>{' '}
-            <button type="button" disabled={busy} onClick={() => remove(r.id)}>Remove</button>
-          </li>
-        ))}
-        {rows.length === 0 && <li className="muted">No participants recorded.</li>}
-      </ul>
+      {ok && <p className="notice-ok">{ok}</p>}
+      {rows === null ? (
+        <p className="muted">Loading...</p>
+      ) : list.length === 0 ? (
+        <p className="muted">No registrations yet.</p>
+      ) : (
+        <>
+          <p className="attendance-totals">
+            <span>Total Present: <strong>{present}</strong></span>
+            <span>Total Absent: <strong>{absent}</strong></span>
+            <span className="muted">Registered: {list.length}</span>
+          </p>
+          <div className="table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>College Email</th>
+                  <th>Dept</th>
+                  <th>Sec</th>
+                  <th>Year</th>
+                  <th>Attendance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.roll_number}</td>
+                    <td>{r.name}</td>
+                    <td className="cell-muted">{r.email}</td>
+                    <td className="cell-muted">{r.department || '-'}</td>
+                    <td className="cell-muted">{r.section || '-'}</td>
+                    <td className="cell-muted">{r.year || '-'}</td>
+                    <td>
+                      <span className="att-actions">
+                        <button type="button" className={`att-btn ${marks[r.id] === 'present' ? 'att-on-present' : ''}`}
+                          onClick={() => mark(r.id, 'present')} disabled={busy}>Present</button>
+                        <button type="button" className={`att-btn ${marks[r.id] === 'absent' ? 'att-on-absent' : ''}`}
+                          onClick={() => mark(r.id, 'absent')} disabled={busy}>Absent</button>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="att-savebar">
+            <button type="button" className="btn btn-primary" onClick={save} disabled={busy || !dirty}>
+              {busy ? 'Saving...' : 'Save attendance'}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={download} disabled={busy}>
+              <Icon name="doc" size={16} /> Download Excel
+            </button>
+          </div>
+        </>
+      )}
     </section>
   )
 }

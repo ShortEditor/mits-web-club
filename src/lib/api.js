@@ -1,5 +1,5 @@
 import { supabase, isDemoMode } from './supabase'
-import { demoEvents } from './demoData'
+import { demoEvents, demoRegistrations } from './demoData'
 
 // Data access layer: demo fixtures when unconfigured, Supabase when live.
 // RLS on the database is the real gate - these queries assume it.
@@ -278,4 +278,80 @@ export async function addAdminByEmail(email) {
   const { data, error } = await supabase.rpc('add_admin_by_email', { target_email: email })
   if (error) throw error
   return data
+}
+
+// ---------- Event registrations + attendance (migration 0008) ----------
+
+// The signed-in student's own registration for one event (null when not
+// registered). RLS: students read only their own rows.
+export async function getMyRegistration(eventId) {
+  if (isDemoMode) return null
+  const { data: userData } = await supabase.auth.getUser()
+  const uid = userData?.user?.id
+  if (!uid) return null
+  const { data, error } = await supabase
+    .from('event_registrations')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('user_id', uid)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+// Student self-registration. RLS: published events only, own user id, and
+// attendance can never be pre-set by the student.
+export async function registerForEvent(eventId, fields) {
+  if (isDemoMode) throw new Error('Local preview only: registration needs the live backend.')
+  const { data: userData } = await supabase.auth.getUser()
+  const uid = userData?.user?.id
+  if (!uid) throw new Error('Sign in to register.')
+  const { data, error } = await supabase
+    .from('event_registrations')
+    .insert({ event_id: eventId, user_id: uid, ...fields })
+    .select()
+    .single()
+  if (error) {
+    if (String(error.message).toLowerCase().includes('duplicate')) {
+      throw new Error('That roll number is already registered for this event.')
+    }
+    throw error
+  }
+  return data
+}
+
+// Event managers (admin or the faculty editor who owns the event): full
+// registration list for one event.
+export async function listRegistrations(eventId) {
+  if (isDemoMode) return demoRegistrations
+  const { data, error } = await supabase
+    .from('event_registrations')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('roll_number')
+  if (error) throw error
+  return data
+}
+
+// Event managers: save attendance marks. entries: [{ id, status }] with status
+// 'present' | 'absent' | null (null clears a mark). RLS and the guard trigger
+// restrict this to the event's faculty owner or an admin.
+export async function saveAttendance(entries) {
+  if (isDemoMode) throw new Error('Local preview only: attendance needs the live backend.')
+  if (!entries.length) return
+  const { data: userData } = await supabase.auth.getUser()
+  const uid = userData?.user?.id || null
+  const now = new Date().toISOString()
+  for (const entry of entries) {
+    const { error } = await supabase
+      .from('event_registrations')
+      .update({
+        attendance_status: entry.status,
+        attendance_marked_by: entry.status ? uid : null,
+        attendance_marked_at: entry.status ? now : null,
+        updated_at: now,
+      })
+      .eq('id', entry.id)
+    if (error) throw error
+  }
 }

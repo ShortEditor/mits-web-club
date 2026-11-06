@@ -50,3 +50,31 @@ export const demoEvents = [
 
 export const demoGallery = []
 export const demoDocuments = []
+
+// Sample registrations so the faculty attendance panel can be previewed in
+// demo mode (dev builds without a backend). Never used in production.
+export const demoRegistrations = [
+  {
+    id: 'demo-reg-1', event_id: 'demo-1', user_id: 'demo-u1',
+    roll_number: '23471A05B2', name: 'Ananya Sharma', email: '23471a05b2@mits.ac.in',
+    department: 'CSE', section: 'A', year: '2nd',
+    attendance_status: 'present', attendance_marked_by: 'demo-faculty',
+    attendance_marked_at: '2026-11-06T10:05:00+05:30',
+    created_at: '2026-11-04T18:20:00+05:30', updated_at: '2026-11-06T10:05:00+05:30',
+  },
+  {
+    id: 'demo-reg-2', event_id: 'demo-1', user_id: 'demo-u2',
+    roll_number: '23471A05C7', name: 'Rahul Verma', email: 'rahul.v@mits.ac.in',
+    department: 'CSE', section: 'B', year: '2nd',
+    attendance_status: 'absent', attendance_marked_by: 'demo-faculty',
+    attendance_marked_at: '2026-11-06T10:05:00+05:30',
+    created_at: '2026-11-04T19:02:00+05:30', updated_at: '2026-11-06T10:05:00+05:30',
+  },
+  {
+    id: 'demo-reg-3', event_id: 'demo-1', user_id: 'demo-u3',
+    roll_number: '24475A0511', name: 'Meena Krishnan', email: 'meena.k@mits.ac.in',
+    department: 'IT', section: 'A', year: '1st',
+    attendance_status: null, attendance_marked_by: null, attendance_marked_at: null,
+    created_at: '2026-11-05T09:41:00+05:30', updated_at: '2026-11-05T09:41:00+05:30',
+  },
+]

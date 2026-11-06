@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { getEventBySlug, listGallery, mediaUrl } from '../lib/api'
 import Icon from '../components/Icon'
 import PosterImage from '../components/PosterImage'
+import RegistrationPanel from '../components/RegistrationPanel'
 
 // Event page: details + gallery for completed events. Media comes from private
 // Storage via short-lived signed URLs, so sign-in is enforced server-side too.
@@ -35,10 +36,11 @@ export default function EventDetail() {
         <span className="lifecycle-badge">{event.lifecycle}</span>
       </p>
       {event.description && <p>{event.description}</p>}
+      <RegistrationPanel event={event} />
       {event.external_registration_url && (
         <p><a className="btn" href={event.external_registration_url} target="_blank" rel="noreferrer">Register <Icon name="arrow" /></a></p>
       )}
-      {[['Eligibility','eligibility'],['Schedule','schedule'],['Rules','rules'],['Guidelines','guidelines'],['Prizes','prizes']]
+      {[['Eligibility','eligibility'],['Rules & Guidelines','rules'],['Prizes','prizes']]
         .filter(([, k]) => event[k])
         .map(([label, k]) => (
           <section key={k}>
