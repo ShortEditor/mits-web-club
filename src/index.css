@@ -147,10 +147,13 @@ input.form-input, select.form-input, textarea.form-input {
 
 @media (max-width: 640px) {
   .page { padding: 28px 16px 56px; }
-  .event-row { flex-direction: column; }
-  .event-row .row-poster { width: 100%; height: auto; aspect-ratio: 4 / 3; }
-  .event-row .row-action { align-self: flex-end; }
-  .date-badge { flex: none; display: flex; justify-content: center; gap: 8px; align-items: baseline; padding: 10px 4px; }
+  /* Small poster thumbnail stays BESIDE the title on phones too (user request
+     2026-11-06) - no full-width stacked poster. Click still opens the lightbox. */
+  .event-row { flex-wrap: wrap; gap: 12px; padding: 14px; align-items: center; }
+  .event-row .row-poster { flex: 0 0 auto; width: 64px; height: 84px; }
+  .date-badge { flex: 0 0 auto; padding: 8px 6px; }
+  .event-row .row-main { flex: 1 1 150px; }
+  .event-row .row-action { flex: 0 0 100%; text-align: right; }
   .main-nav { overflow-x: auto; }
 }
 
